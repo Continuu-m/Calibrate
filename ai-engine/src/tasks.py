@@ -4,6 +4,30 @@
 
 from jinja2 import Environment, FileSystemLoader
 from models import ModelTask
+from services import AIAnalyzer, CapacityChecker
+from data.persistence import load_tasks, save_tasks
+
+analyser = AIAnalyzer()
+subtasks=analyser.analyze_task("Analyse data")
+
+checker=CapacityChecker()
+capacity=checker.check("Complex Task", 5000)
+
+analyzer = AIAnalyzer()
+checker = CapacityChecker()
+
+def detect_subtasks(task: str):
+    return analyzer.analyze_task(task)
+
+def calculate_capacity(tasks: list):
+    total_h = sum(t.get("est_hours", 1) for t in tasks if not t.get("complete"))
+    return total_h  # checker.check() for AI boost
+
+def detect_overcommitment(tasks: list):
+    cap = calculate_capacity(tasks)
+    if cap > 8:
+        return {"excess": cap - 8, "recommendations": ["Prioritize"]}
+    return None
 
 class AgentTasks:
     def __init__(self):
