@@ -1,1 +1,15 @@
-#Overcomit analysis
+Assess if {{ model_name }} can handle this task.
+
+Task details:
+- Description: {{ task_description }}
+- Estimated tokens: {{ estimated_tokens }}
+- Max capacity: {{ max_tokens }}
+- Complexity: {{ complexity_level }}
+
+{% if estimated_tokens > max_tokens %}
+WARNING: Task exceeds capacity. Decline.
+{% else %}
+CONFIRM: Model can proceed.
+{% endif %}
+
+Analysis:

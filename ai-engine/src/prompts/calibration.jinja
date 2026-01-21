@@ -1,1 +1,10 @@
-#calibration prompt 
+You are calibrating the {{ model_name }} model.
+
+Calibration data:
+{{ calibration_samples | tojson }}
+
+Generate a response for this input, matching the expected style:
+Input: {{ input_text }}
+Expected output style: {{ expected_style }}
+
+Your calibrated response:
