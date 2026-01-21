@@ -1,41 +1,23 @@
 #PRD 3.5
-import json
-import os
-from typing import List, Dict, Any
 
-def save_tasks(filename: str, tasks: List[Dict[str, Any]]) -> None:
-    os.makedirs(os.path.dirname(filename) if os.path.dirname(filename) else '.', exist_ok=True)
-    with open(filename, 'w') as f:
-        json.dump(tasks, f, indent=4)
+from jinja2 import Environment, FileSystemLoader
+from models import ModelTask
+from typing import List
 
-def load_tasks(filename: str) -> List[Dict[str, Any]]:
-    if os.path.exists(filename):
-        try:
-            with open(filename, 'r') as f:
-                return json.load(f)
-        except (json.JSONDecodeError, IOError):
-            return []
-    return []
 
-def add_task(tasks: List[Dict[str, Any]], description: str) -> None:
-    task = {"description": description, "completed": False}
-    tasks.append(task)
+class LearningEngine:
+    def __init__(self, prompts_dir: str = "../prompts"):
+        self.env = Environment(loader=FileSystemLoader(prompts_dir))
+        self.model_task = ModelTask(name="learning")
+        self.performance_log = []  # Persist to data/
 
-def view_tasks(tasks: List[Dict[str, Any]]) -> None:
-    if not tasks:
-        print("No tasks.")
-        return
-    for i, task in enumerate(tasks, 1):
-        status = "✓" if task.get("completed") else "○"
-        print(f"{i}. [{status}] {task['description']}")
-
-def remove_task(tasks: List[Dict[str, Any]], index: int) -> Dict[str, Any] | None:
-    if 0 <= index < len(tasks):
-        return tasks.pop(index)
-    return None
-
-def mark_complete(tasks: List[Dict[str, Any]], index: int) -> bool:
-    if 0 <= index < len(tasks):
-        tasks[index]["completed"] = True
-        return True
-    return False
+    def calibrate(self, samples: List[Dict]) -> str:
+        template = self.env.get_template("calib.jinja")
+        prompt = template.render(
+            model_name="agent",
+            calibration_samples=samples,
+            expected_style="accurate subtasks"
+        )
+        result = self.model_task.run([{"prompt": prompt}])
+        self.performance_log.append(result)
+        return result[0]["prediction"]

@@ -1,40 +1,19 @@
-#Groq llm calls
+from jinja2 import Environment, FileSystemLoader
+from models import ModelTask
+from typing import List, Dict
 
 
-from pydantic import BaseModel, Field
-from langchain_groq import ChatGroq
-from langchain_core.prompts import PromptTemplate
-import os
-from typing import List
+class AIAnalyzer:
+    def __init__(self, prompts_dir: str = "../prompts"):
+        self.env = Environment(loader=FileSystemLoader(prompts_dir))
+        self.model_task = ModelTask(name="analyzer")  # Your model setup
 
-class Subtask(BaseModel):
-    id: int = Field(..., description="ID")
-    description: str = Field(..., description="Subtask")
-    type: str = Field(..., description="personal/technical/historical")
+    def analyze_task(self, description: str) -> List[Dict]:
+        template = self.env.get_template("task_breakdown.jinja")
+        prompt = template.render(main_task=description)
+        result = self.model_task.run([{"prompt": prompt}])
+        return self._parse_subtasks(result[0]["prediction"])
 
-class Subtasks(BaseModel):
-    subtasks: list[Subtask]
-
-def detect_subtasks(task: str) -> list[Subtask]:
-    llm = ChatGroq(model="llama3.1-8b-instant", groq_api_key=os.getenv("GROQ_API_KEY"))
-    prompt = PromptTemplate.from_template(
-        "Break '{task}' into 3-5 subtasks. Classify: personal/technical/historical. JSON only."
-    )
-    chain = prompt | llm.with_structured_output(Subtasks)
-    result = chain.invoke({"task": task})
-    return result.subtasks
-
-def analyze_task(task: str) -> dict:
-    subtasks = detect_subtasks(task)
-    times = predict_realistic_time(task, subtasks)
-    return {
-        "original": task,
-        "subtasks": subtasks,
-        "estimates": times,
-        "confidence": 0.78
-    }
-
-def predict_realistic_time(task: str, subtasks: list) -> dict:
-    base_time = len(subtasks) * 30  # min/subtask
-    realistic = base_time * 1.5 / 60
-    return {"best": f"{base_time/60:.1f}h", "realistic": f"{realistic:.1f}h", "worst": f"{realistic*1.4:.1f}h"}
+    def _parse_subtasks(self, output: str) -> List[Dict]:
+        # TODO: JSON/logit parser for subtasks
+        return [{"id": 1, "desc": "Placeholder", "type": "action"}]
