@@ -1,6 +1,8 @@
 #CLI entry 
 """Task Manager CLI."""
 import os
+import argparse
+from tasks import AgentTasks
 from tasks import (  # All your functions
     add_task, view_tasks, remove_task, save_tasks, load_tasks, mark_complete,
     detect_subtasks, calculate_capacity, detect_overcommitment
@@ -83,6 +85,21 @@ def main():
         
         else:
             print("Invalid choice!")
+    parser = argparse.ArgumentParser(description="LLM Agent CLI")
+    parser.add_argument("task", choices=["calibrate", "capacity_check", "breakdown"])
+    parser.add_argument("--model", default="gpt-4o")
+    parser.add_argument("--input", required=True)
+    args = parser.parse_args()
+
+    agent = AgentTasks()
+    if args.task == "calibrate":
+        result = agent.calibrate(args.model, [{"input": args.input}])
+    elif args.task == "capacity_check":
+        result = agent.capacity_check(args.input, 500)
+    else:
+        result = agent.breakdown(args.input)
+        
+    print("Result:")
 
 if __name__ == "__main__":
     main()
