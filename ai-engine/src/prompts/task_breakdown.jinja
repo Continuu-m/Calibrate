@@ -1,1 +1,18 @@
-#break to subtasks
+Break down this task into sequential subtasks.
+
+Main task: {{ main_task }}
+
+Output format:
+{
+  "subtasks": [
+    {% for step in breakdown_steps %}
+    {
+      "id": "{{ loop.index }}",
+      "description": "{{ step }}",
+      "dependencies": {{ step.dependencies | default([]) | tojson }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+
+Subtasks:
