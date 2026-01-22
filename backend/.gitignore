@@ -1,33 +1,18 @@
 node_modules
-# Dependencies
+# Keep environment variables out of version control
+.env
+
+/src/generated/prisma
+
 node_modules/
-
-# Build output
 dist/
-build/
-out/
-
-# TypeScript incremental build information
-tsconfig.tsbuildinfo
-
-# Environment variables
 .env
 .env.local
 .env.*.local
-
-# Logs
-logs
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# IDE/Editor settings
+.DS_Store
+prisma/*.db
+prisma/*.db-journal
 .vscode/
 .idea/
-
-# OS files
-.DS_Store
-Thumbs.db
-# Prisma Client
-/src/generated/prisma
+coverage/
