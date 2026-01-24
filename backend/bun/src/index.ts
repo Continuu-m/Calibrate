@@ -2,6 +2,7 @@ import { serve } from "bun";
 import index from "./index.html";
 import { supabase } from "./supabase";
 import { requireUser } from "./auth";
+
 const server = serve({
   routes: {
     // Serve index.html for all unmatched routes.
