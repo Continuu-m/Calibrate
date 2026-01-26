@@ -3,6 +3,7 @@ import { pgTable, serial, text, integer, timestamp, boolean, varchar, numeric } 
 // Users table
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
+  supabaseId: varchar('supabase_id', { length: 255 }).unique().notNull(),
   email: varchar('email', { length: 255 }).notNull(),
   createdAt: timestamp('created_at').defaultNow(),
   preferences: text('preferences').default('{}'),
@@ -19,8 +20,9 @@ export const tasks = pgTable('tasks', {
   completedAt: timestamp('completed_at'),
   estimatedTime: numeric('estimated_time'), // in hours
   actualTime: numeric('actual_time'),
-  taskType: varchar('task_type', { length: 50 }),
+  taskType: varchar('task_type', { length: 50 }).$type<'CREATIVE' | 'ANALYTICAL' | 'ADMINISTRATIVE' | 'COLLABORATIVE' | 'GENERAL'>().default('GENERAL'),
   priority: integer('priority').default(0),
+  status: varchar('status', { length: 50 }).$type<'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'DEFERRED'>().default('PLANNED'),
 });
 
 // Subtasks table
