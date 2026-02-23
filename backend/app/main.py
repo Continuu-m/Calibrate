@@ -1,35 +1,34 @@
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
-from app.db.database import engine, Base, SessionLocal
-from app.models.task import Task
+from sqlalchemy import text
 
-app = FastAPI()
+from app.db.database import engine, get_db, Base
+from app.models import *  # Registers all models with Base.metadata
+from app.auth.router import router as auth_router
 
+app = FastAPI(
+    title="Calibrate API",
+    version="0.1.0",
+    description="Task Reality Checker — AI-powered time estimation"
+)
 
+# Create all DB tables on startup
+# In production: switch to Alembic migrations
 Base.metadata.create_all(bind=engine)
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# ─── Register Routers ─────────────────────────────────────────────────────────
+app.include_router(auth_router)
+# Future: app.include_router(tasks_router)
 
-@app.get("/getdb")
-def db_test(db: Session = Depends(get_db)):
-  
-    tasks = db.query(Task).all()
-    return {"status": "ok", "tasks": tasks}
 
-@app.get('/')
+# ─── Health Routes ────────────────────────────────────────────────────────────
+
+@app.get("/")
 def health():
-    return {"Status": "Ok"}
+    return {"status": "ok"}
 
 
-@app.post("/tasks")
-def create_task(title: str, description: str, db: Session = Depends(get_db)):
-    new_task = Task(title=title, description=description)
-    db.add(new_task)
-    db.commit()
-    db.refresh(new_task)
-    return new_task
+@app.get("/ping-db")
+def ping_db(db: Session = Depends(get_db)):
+    db.execute(text("SELECT 1"))
+    return {"db": "connected"}
