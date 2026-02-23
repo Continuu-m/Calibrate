@@ -5,6 +5,7 @@ from sqlalchemy import text
 from app.db.database import engine, get_db, Base
 from app.models import *  # Registers all models with Base.metadata
 from app.auth.router import router as auth_router
+from app.tasks.router import router as tasks_router
 
 app = FastAPI(
     title="Calibrate API",
@@ -18,7 +19,7 @@ Base.metadata.create_all(bind=engine)
 
 # ─── Register Routers ─────────────────────────────────────────────────────────
 app.include_router(auth_router)
-# Future: app.include_router(tasks_router)
+app.include_router(tasks_router)
 
 
 # ─── Health Routes ────────────────────────────────────────────────────────────
