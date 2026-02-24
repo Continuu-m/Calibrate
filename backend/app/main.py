@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
@@ -13,9 +14,20 @@ app = FastAPI(
     description="Task Reality Checker — AI-powered time estimation"
 )
 
+# ─── CORS Configuration ──────────────────────────────────────────────────────
+# Allows the frontend to communicate with the backend across different ports.
+# In production, specify the actual domain instead of "*"
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5173", "http://127.0.0.1:5174"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Create all DB tables on startup
 # In production: switch to Alembic migrations
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
 
 # ─── Register Routers ─────────────────────────────────────────────────────────
 app.include_router(auth_router)

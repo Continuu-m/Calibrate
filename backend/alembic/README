@@ -1,0 +1,15 @@
+## alembic/versions/
+
+This folder stores all your migration files.
+Each file represents one change to your database schema.
+
+Alembic generates these automatically when you run:
+    alembic revision --autogenerate -m "description of change"
+
+### Migration Chain
+Migrations form a linked list — each one knows its parent:
+    None → a1b2c3 → d4e5f6 → g7h8i9 (current)
+
+### Never manually edit generated migration files
+Unless you know exactly what you're doing. Alembic tracks
+revision IDs and manual edits can break the chain.
