@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+  }
+}
+
+/* Custom styles for the "paper feel" texture */
+.paper-texture {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.03;
+  z-index: 100;
+  mix-blend-mode: multiply;
+  background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCk1UOBkqpcI9jTWhAbvTmQekJ37ks4Ow1w3De9MRfUE9_xLFE3zxxXGP9L7jal9UfhJyB4-b55BlUb-tKlA8_GMT18pzmDdo0tBjNJYxs1r8Y7HMeQYVCvYyddI9W-PSYb-Duo7FrSvkejIaNiEgmbT3G4RWHh_MuJRBiyeHCPZTNCAQLjAJJ5fuxJQTKShKitfzWmmqfDj1fdQA3uVyiLjPogcjtd3z27HZFIomfUx_lfdeJYVp4DavqOUILeF37O-dZV7K1cpFs");
+}
