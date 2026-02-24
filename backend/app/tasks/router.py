@@ -32,6 +32,7 @@ from app.tasks import service
 from app.tasks.schemas import (
     TaskCreate, TaskUpdate, TaskResponse, TaskListResponse, SubtaskResponse
 )
+from app.limiter import limiter
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 

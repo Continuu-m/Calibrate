@@ -2,17 +2,26 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.db.database import engine, get_db, Base
 from app.models import *  # Registers all models with Base.metadata
 from app.auth.router import router as auth_router
 from app.tasks.router import router as tasks_router
+from app.limiter import limiter
 
+limiter = limiter
 app = FastAPI(
     title="Calibrate API",
     version="0.1.0",
     description="Task Reality Checker — AI-powered time estimation"
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # ─── CORS Configuration ──────────────────────────────────────────────────────
 # Allows the frontend to communicate with the backend across different ports.

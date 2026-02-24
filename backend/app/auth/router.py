@@ -27,12 +27,15 @@ from app.models.user import User
 from app.auth.schemas import RegisterRequest, LoginRequest, TokenResponse, UserResponse
 from app.auth.utils import hash_password, verify_password, create_access_token
 from app.auth.dependencies import get_current_user
+from app.limiter import limiter
+from fastapi import Request
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @router.post("/register", response_model=UserResponse, status_code=201)
-def register(payload: RegisterRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def register(request: Request, payload: RegisterRequest, db: Session = Depends(get_db)):
     """
     Create a new user account.
 
@@ -72,7 +75,8 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(payload: LoginRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)):
     """
     Authenticate and return a JWT token.
 
