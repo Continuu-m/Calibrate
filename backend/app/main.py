@@ -19,7 +19,7 @@ app = FastAPI(
 # In production, specify the actual domain instead of "*"
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5173", "http://127.0.0.1:5174"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -27,7 +27,7 @@ app.add_middleware(
 
 # Create all DB tables on startup
 # In production: switch to Alembic migrations
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
 
 # ─── Register Routers ─────────────────────────────────────────────────────────
 app.include_router(auth_router)
