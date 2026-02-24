@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom';
-import { weeklyData, userData } from '../data/mockData';
+import { weeklyData } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
 import AddTaskModal from '../components/AddTaskModal';
 
 export default function WeeklyCapacity() {
+    const { user, logout } = useAuth();
     const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
 
     return (
@@ -30,7 +32,16 @@ export default function WeeklyCapacity() {
                         >
                             Add Task
                         </button>
-                        <div className="bg-center bg-no-repeat bg-cover rounded-full size-10 border border-border-light dark:border-border-dark" style={{ backgroundImage: `url(${userData.avatar})` }}></div>
+                        <div className="flex items-center gap-3">
+                            <div className="bg-center bg-no-repeat bg-cover rounded-full size-10 border border-border-light dark:border-border-dark" style={{ backgroundImage: `url(${user?.avatar || 'https://via.placeholder.com/40'})` }}></div>
+                            <button
+                                onClick={logout}
+                                className="text-secondary hover:text-primary transition-colors"
+                                title="Logout"
+                            >
+                                <span className="material-symbols-outlined text-lg">logout</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </header>

@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { userData } from '../data/mockData'
+import { useAuth } from '../context/AuthContext'
 import AddTaskModal from '../components/AddTaskModal'
 import TaskReflectionPanel from '../components/TaskReflectionPanel'
+import userData  from '../data/mockData'
 
 export default function DailyDashboard() {
+    const { user, logout } = useAuth();
     const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
     const [isReflectionOpen, setIsReflectionOpen] = useState(false);
 
@@ -35,9 +37,16 @@ export default function DailyDashboard() {
                             style={{ backgroundImage: `url(${userData.avatar})` }}
                         ></div>
                         <div>
-                            <p className="text-sm font-bold">{userData.name}</p>
-                            <p className="text-[10px] text-secondary">{userData.plan}</p>
+                            <p className="text-sm font-bold">{user?.full_name || 'User'}</p>
+                            <p className="text-[10px] text-secondary">{user?.email}</p>
                         </div>
+                        <button
+                            onClick={logout}
+                            className="ml-auto text-secondary hover:text-primary transition-colors"
+                            title="Logout"
+                        >
+                            <span className="material-symbols-outlined text-lg">logout</span>
+                        </button>
                     </div>
                 </div>
             </aside>
