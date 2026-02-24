@@ -28,21 +28,21 @@ export default function Register() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark p-4">
-            <div className="w-full max-w-md bg-white dark:bg-surface-dark border border-border-light dark:border-border-dark p-8 shadow-sm space-y-6 relative overflow-hidden">
+        <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark p-4 sm:p-6">
+            <div className="w-full max-w-md bg-white dark:bg-surface-dark border border-border-light dark:border-border-dark p-6 sm:p-8 shadow-sm space-y-6 relative overflow-hidden">
                 {/* Decorative element matching the app style */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 -mr-16 -mt-16 rounded-full blur-3xl"></div>
 
                 <div className="text-center">
-                    <h1 className="text-4xl text-primary font-serif flex items-center justify-center gap-2">
-                        <span className="material-symbols-outlined text-3xl">tune</span> Calibrate
+                    <h1 className="text-3xl sm:text-4xl text-primary font-serif flex items-center justify-center gap-2">
+                        <span className="material-symbols-outlined text-2xl sm:text-3xl">tune</span> Calibrate
                     </h1>
-                    <p className="text-xs text-secondary mt-2 tracking-widest uppercase font-bold">Reality Checker</p>
+                    <p className="text-[10px] sm:text-xs text-secondary mt-2 tracking-widest uppercase font-bold">Reality Checker</p>
                 </div>
 
-                <div className="space-y-2">
-                    <h2 className="text-2xl font-serif">Create Account</h2>
-                    <p className="text-sm text-secondary">Start calibrating your tasks and time.</p>
+                <div className="space-y-1 sm:space-y-2">
+                    <h2 className="text-xl sm:text-2xl font-serif">Create Account</h2>
+                    <p className="text-xs sm:text-sm text-secondary">Start calibrating your tasks and time.</p>
                 </div>
 
                 {error && (

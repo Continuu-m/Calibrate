@@ -82,12 +82,12 @@ export default function AddTaskModal({ isOpen, onClose }) {
         <div className="fixed inset-0 z-[100] flex justify-end">
             <div className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm" onClick={handleClose}></div>
             <div className="relative w-full max-w-xl bg-white dark:bg-surface-dark h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-                <header className="px-8 py-6 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-white dark:bg-surface-dark z-10 sticky top-0">
-                    <h2 className="text-sm font-bold uppercase tracking-widest">New Task</h2>
+                <header className="px-4 sm:px-8 py-4 sm:py-6 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-white dark:bg-surface-dark z-10 sticky top-0">
+                    <h2 className="text-[10px] sm:text-sm font-bold uppercase tracking-widest text-secondary">New Task</h2>
                     <button onClick={handleClose} disabled={isSubmitting} className="material-symbols-outlined text-stone-400 hover:text-stone-900 dark:hover:text-white transition-colors disabled:opacity-50">close</button>
                 </header>
 
-                <div className="flex-1 overflow-y-auto px-8 py-10 space-y-8">
+                <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 sm:py-10 space-y-8">
                     {error && (
                         <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 text-xs border border-red-100 dark:border-red-900/40 flex items-center gap-2">
                             <span className="material-symbols-outlined text-sm">error</span>
@@ -96,11 +96,11 @@ export default function AddTaskModal({ isOpen, onClose }) {
                     )}
 
                     <div className="space-y-2">
-                        <h1 className="text-4xl text-stone-300 dark:text-stone-700">What needs to get done?</h1>
+                        <h1 className="text-2xl sm:text-4xl text-stone-300 dark:text-stone-700">What needs to get done?</h1>
                         <input
                             type="text"
                             placeholder="Type task name..."
-                            className="w-full text-4xl bg-transparent border-none p-0 focus:ring-0 placeholder-stone-200 dark:placeholder-stone-800"
+                            className="w-full text-2xl sm:text-4xl bg-transparent border-none p-0 focus:ring-0 placeholder-stone-200 dark:placeholder-stone-800"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             disabled={isSubmitting}
@@ -108,7 +108,7 @@ export default function AddTaskModal({ isOpen, onClose }) {
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
                         <div className="space-y-2">
                             <label className="text-[10px] font-bold uppercase text-secondary tracking-widest">Date Context</label>
                             <div className="flex items-center gap-2 border border-border-light dark:border-border-dark p-3 bg-stone-50/50 dark:bg-stone-900/50 text-stone-500">
@@ -188,18 +188,18 @@ export default function AddTaskModal({ isOpen, onClose }) {
                     </div>
                 </div>
 
-                <footer className="p-8 border-t border-border-light dark:border-border-dark bg-stone-50/30 dark:bg-stone-900/30 grid grid-cols-1 gap-3 sticky bottom-0">
+                <footer className="p-4 sm:p-8 border-t border-border-light dark:border-border-dark bg-stone-50/30 dark:bg-stone-900/30 grid grid-cols-1 gap-3 sticky bottom-0">
                     <button
                         onClick={() => handleSubmit(false)}
                         disabled={isSubmitting || !title.trim()}
-                        className="w-full bg-primary hover:bg-red-700 text-white font-bold uppercase text-sm tracking-widest py-4 transition-colors disabled:opacity-50 disabled:hover:bg-primary"
+                        className="w-full bg-primary hover:bg-red-700 text-white font-bold uppercase text-xs sm:text-sm tracking-widest py-3 sm:py-4 transition-colors disabled:opacity-50 disabled:hover:bg-primary shadow-sm active:scale-[0.98]"
                     >
                         {isSubmitting ? 'Saving...' : 'Add to Today'}
                     </button>
                     <button
                         onClick={() => handleSubmit(true)}
                         disabled={isSubmitting || !title.trim()}
-                        className="w-full bg-transparent border border-border-light dark:border-border-dark hover:bg-white dark:hover:bg-stone-800 text-stone-900 dark:text-stone-100 font-bold uppercase text-sm tracking-widest py-4 transition-colors disabled:opacity-50"
+                        className="w-full bg-transparent border border-border-light dark:border-border-dark hover:bg-white dark:hover:bg-stone-800 text-stone-900 dark:text-stone-100 font-bold uppercase text-xs sm:text-sm tracking-widest py-3 sm:py-4 transition-colors disabled:opacity-50 active:scale-[0.98]"
                     >
                         Schedule for Later
                     </button>

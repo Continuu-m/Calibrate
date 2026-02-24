@@ -1,7 +1,7 @@
 export default function Settings() {
     return (
-        <div className="flex-1 p-12 max-w-4xl mx-auto w-full">
-            <h1 className="text-5xl mb-8">Settings</h1>
+        <div className="flex-1 p-4 sm:p-12 max-w-4xl mx-auto w-full">
+            <h1 className="text-3xl sm:text-5xl mb-6 sm:mb-8 font-serif">Settings</h1>
             <div className="space-y-8">
                 <section>
                     <h2 className="text-sm font-bold uppercase tracking-widest text-secondary mb-4">Integrations</h2>

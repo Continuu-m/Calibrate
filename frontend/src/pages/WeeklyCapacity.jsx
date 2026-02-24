@@ -117,28 +117,29 @@ export default function WeeklyCapacity() {
         <div className="flex-1 flex flex-col">
             <AddTaskModal isOpen={isAddTaskOpen} onClose={() => { setIsAddTaskOpen(false); fetchTasks(); }} />
 
-            <header className="w-full border-b border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark px-6 py-4 sticky top-0 z-50">
+            <header className="w-full border-b border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark px-4 sm:px-6 py-3 sm:py-4 sticky top-0 z-50">
                 <div className="max-w-[1400px] mx-auto flex items-center justify-between">
-                    <div className="flex items-center gap-3 text-stone-900 dark:text-stone-100">
-                        <div className="size-6 text-primary">
-                            <span className="material-symbols-outlined text-3xl">tune</span>
+                    <Link to="/" className="flex items-center gap-2 sm:gap-3 text-stone-900 dark:text-stone-100">
+                        <div className="size-5 sm:size-6 text-primary">
+                            <span className="material-symbols-outlined text-2xl sm:text-3xl">tune</span>
                         </div>
-                        <h1 className="text-2xl tracking-tight">Calibrate</h1>
-                    </div>
+                        <h1 className="text-xl sm:text-2xl tracking-tight font-serif">Calibrate</h1>
+                    </Link>
                     <nav className="hidden md:flex items-center gap-8">
                         <Link to="/" className="text-stone-600 dark:text-stone-300 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors">Dashboard</Link>
                         <Link to="/weekly" className="text-primary font-bold text-sm border-b-2 border-primary pb-0.5">Weekly View</Link>
-                        <a className="text-stone-600 dark:text-stone-300 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" href="#">Settings</a>
+                        <Link to="/settings" className="text-stone-600 dark:text-stone-300 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors">Settings</Link>
                     </nav>
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-3 sm:gap-6">
                         <button
                             onClick={() => setIsAddTaskOpen(true)}
-                            className="flex items-center justify-center h-10 px-6 bg-primary hover:bg-red-700 text-white text-sm font-bold uppercase tracking-wide transition-colors"
+                            className="flex items-center justify-center h-8 sm:h-10 px-3 sm:px-6 bg-primary hover:bg-red-700 text-white text-[10px] sm:text-sm font-bold uppercase tracking-wide transition-colors shadow-sm"
                         >
-                            Add Task
+                            <span className="sm:hidden material-symbols-outlined text-sm">add</span>
+                            <span className="hidden sm:inline">Add Task</span>
                         </button>
-                        <div className="flex items-center gap-3">
-                            <div className="bg-center bg-no-repeat bg-cover rounded-full size-10 border border-border-light dark:border-border-dark bg-stone-200 flex items-center justify-center text-stone-500 font-bold" style={{ backgroundImage: user?.avatar ? `url(${user.avatar})` : 'none' }}>
+                        <div className="flex items-center gap-2 sm:gap-3">
+                            <div className="bg-center bg-no-repeat bg-cover rounded-full size-8 sm:size-10 border border-border-light dark:border-border-dark bg-stone-200 flex items-center justify-center text-stone-500 font-bold" style={{ backgroundImage: user?.avatar ? `url(${user.avatar})` : 'none' }}>
                                 {!user?.avatar && user?.full_name?.charAt(0)}
                             </div>
                             <button
@@ -153,31 +154,31 @@ export default function WeeklyCapacity() {
                 </div>
             </header>
 
-            <main className="flex-1 px-6 py-8 max-w-[1400px] mx-auto w-full flex flex-col gap-8">
+            <main className="flex-1 px-4 sm:px-6 py-6 sm:py-8 max-w-[1400px] mx-auto w-full flex flex-col gap-6 sm:gap-8">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-border-light dark:border-border-dark pb-6">
                     <div>
-                        <h2 className="text-4xl md:text-5xl text-stone-900 dark:text-stone-100 mb-2">Weekly Capacity</h2>
-                        <p className="text-secondary dark:text-stone-400 font-sans text-lg">
+                        <h2 className="text-3xl sm:text-4xl md:text-5xl text-stone-900 dark:text-stone-100 mb-2">Weekly Capacity</h2>
+                        <p className="text-secondary dark:text-stone-400 font-sans text-base sm:text-lg">
                             {weeklyData.length > 0 ? `${weeklyData[0].date} ${weeklyData[0].fullDate.toLocaleString('default', { month: 'long' })} — ${weeklyData[6].date} ${weeklyData[6].fullDate.toLocaleString('default', { month: 'long' })}` : 'Loading...'}
                         </p>
                     </div>
-                    <div className="flex gap-8">
-                        <div className="flex flex-col items-end">
-                            <span className="text-xs font-bold uppercase text-secondary dark:text-stone-400 tracking-wider">Total Load</span>
-                            <span className="text-2xl font-bold font-serif text-stone-900 dark:text-stone-100">{formatMinsToHours(totalWeeklyMins)}</span>
+                    <div className="flex gap-6 sm:gap-8">
+                        <div className="flex flex-col items-start md:items-end">
+                            <span className="text-[10px] sm:text-xs font-bold uppercase text-secondary dark:text-stone-400 tracking-wider">Total Load</span>
+                            <span className="text-xl sm:text-2xl font-bold font-serif text-stone-900 dark:text-stone-100">{formatMinsToHours(totalWeeklyMins)}</span>
                         </div>
-                        <div className="flex flex-col items-end">
-                            <span className="text-xs font-bold uppercase text-secondary dark:text-stone-400 tracking-wider">Balance</span>
-                            <span className={`text-2xl font-bold font-serif ${balanceMins < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                        <div className="flex flex-col items-start md:items-end">
+                            <span className="text-[10px] sm:text-xs font-bold uppercase text-secondary dark:text-stone-400 tracking-wider">Balance</span>
+                            <span className={`text-xl sm:text-2xl font-bold font-serif ${balanceMins < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
                                 {balanceMins < 0 ? '' : '+'}{formatMinsToHours(balanceMins)}
                             </span>
                         </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-7 gap-4 md:gap-px bg-border-light dark:bg-border-dark border border-border-light dark:border-border-dark">
+                <div className="grid grid-cols-1 md:grid-cols-7 gap-4 md:gap-px bg-border-light dark:bg-border-dark border border-border-light dark:border-border-dark overflow-x-auto">
                     {weeklyData.map((day, idx) => (
-                        <div key={idx} className={`${day.weekend ? 'bg-stone-100 dark:bg-[#1a0f0d] opacity-80' : day.overloaded ? 'bg-red-50/30 dark:bg-red-900/10 border-t-4 md:border-t-0 md:border-b-4 border-primary' : 'bg-surface-light dark:bg-surface-dark'} min-h-[500px] p-3 flex flex-col gap-3 group hover:bg-stone-50 dark:hover:bg-[#33201c] transition-colors relative`}>
+                        <div key={idx} className={`${day.weekend ? 'bg-stone-100 dark:bg-[#1a0f0d] opacity-80' : day.overloaded ? 'bg-red-50/30 dark:bg-red-900/10 border-t-2 sm:border-t-4 md:border-t-0 md:border-b-4 border-primary' : 'bg-surface-light dark:bg-surface-dark'} min-h-0 sm:min-h-[500px] p-3 flex flex-col gap-3 group hover:bg-stone-50 dark:hover:bg-[#33201c] transition-colors relative md:min-w-0 min-w-full`}>
                             <div className="flex justify-between items-start mb-2">
                                 <div>
                                     <span className={`block text-xs font-bold uppercase ${day.overloaded ? 'text-primary' : 'text-secondary dark:text-stone-400'}`}>{day.day}</span>

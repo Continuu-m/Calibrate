@@ -10,6 +10,7 @@ export default function DailyDashboard() {
     const { user, token, logout } = useAuth();
     const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
     const [isReflectionOpen, setIsReflectionOpen] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -61,24 +62,64 @@ export default function DailyDashboard() {
     };
 
     return (
-        <div className="flex h-screen overflow-hidden">
+        <div className="flex h-screen overflow-hidden relative">
             <AddTaskModal isOpen={isAddTaskOpen} onClose={() => { setIsAddTaskOpen(false); fetchTasks(); }} />
             <TaskReflectionPanel isOpen={isReflectionOpen} onClose={() => setIsReflectionOpen(false)} />
 
-            {/* Sidebar */}
-            <aside className="w-64 border-r border-border-light dark:border-border-dark flex flex-col bg-surface-light dark:bg-surface-dark shrink-0">
-                <div className="p-6">
-                    <h1 className="text-2xl text-primary flex items-center gap-2">
-                        <span className="material-symbols-outlined">tune</span> Calibrate
+            {/* Mobile Header */}
+            <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-surface-light dark:bg-surface-dark border-b border-border-light dark:border-border-dark flex items-center justify-between px-4 z-40">
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setIsSidebarOpen(true)}
+                        className="material-symbols-outlined text-secondary hover:text-primary transition-colors"
+                    >
+                        menu
+                    </button>
+                    <h1 className="text-xl text-primary flex items-center gap-1 font-serif">
+                        <span className="material-symbols-outlined text-2xl">tune</span> Calibrate
                     </h1>
-                    <p className="text-xs text-secondary mt-1 tracking-tight">Reality Checker</p>
+                </div>
+                <button
+                    onClick={() => setIsAddTaskOpen(true)}
+                    className="bg-primary text-white p-2 rounded-sm flex items-center justify-center shadow-sm"
+                >
+                    <span className="material-symbols-outlined">add</span>
+                </button>
+            </header>
+
+            {/* Sidebar Overlay for Mobile */}
+            {isSidebarOpen && (
+                <div
+                    className="lg:hidden fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 transition-opacity"
+                    onClick={() => setIsSidebarOpen(false)}
+                ></div>
+            )}
+
+            {/* Sidebar */}
+            <aside className={`
+                fixed lg:relative inset-y-0 left-0 z-50 w-64 border-r border-border-light dark:border-border-dark flex flex-col bg-surface-light dark:bg-surface-dark shrink-0 transition-transform duration-300 ease-in-out
+                ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+            `}>
+                <div className="p-6 flex justify-between items-start">
+                    <div>
+                        <h1 className="text-2xl text-primary flex items-center gap-2">
+                            <span className="material-symbols-outlined">tune</span> Calibrate
+                        </h1>
+                        <p className="text-xs text-secondary mt-1 tracking-tight">Reality Checker</p>
+                    </div>
+                    <button
+                        onClick={() => setIsSidebarOpen(false)}
+                        className="lg:hidden material-symbols-outlined text-stone-400 hover:text-stone-900 dark:hover:text-white"
+                    >
+                        close
+                    </button>
                 </div>
                 <nav className="flex-1 px-4 py-4 space-y-1">
-                    <Link to="/"><NavItem icon="calendar_today" label="Today" active /></Link>
-                    <Link to="/weekly"><NavItem icon="calendar_month" label="This Week" /></Link>
-                    <Link to="/completed"><NavItem icon="check_circle" label="Completed" /></Link>
-                    <Link to="/insights"><NavItem icon="bar_chart" label="Insights" /></Link>
-                    <Link to="/settings"><NavItem icon="settings" label="Settings" /></Link>
+                    <Link to="/" onClick={() => setIsSidebarOpen(false)}><NavItem icon="calendar_today" label="Today" active /></Link>
+                    <Link to="/weekly" onClick={() => setIsSidebarOpen(false)}><NavItem icon="calendar_month" label="This Week" /></Link>
+                    <Link to="/completed" onClick={() => setIsSidebarOpen(false)}><NavItem icon="check_circle" label="Completed" /></Link>
+                    <Link to="/insights" onClick={() => setIsSidebarOpen(false)}><NavItem icon="bar_chart" label="Insights" /></Link>
+                    <Link to="/settings" onClick={() => setIsSidebarOpen(false)}><NavItem icon="settings" label="Settings" /></Link>
                 </nav>
                 <div className="p-4 border-t border-border-light dark:border-border-dark">
                     <div className="flex items-center gap-3">
@@ -103,7 +144,7 @@ export default function DailyDashboard() {
                 </div>
             </aside>
 
-            <main className="flex-1 flex flex-col overflow-y-auto">
+            <main className="flex-1 flex flex-col overflow-y-auto pt-16 lg:pt-0">
                 {capacityPercent > (user?.preferences?.alert_caution_threshold || 80) && (
                     <div className="bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200 px-6 py-2 text-xs flex justify-between items-center border-b border-red-200 dark:border-red-800/50">
                         <div className="flex items-center gap-2">
@@ -114,37 +155,38 @@ export default function DailyDashboard() {
                     </div>
                 )}
 
-                <div className="px-12 py-8 max-w-4xl mx-auto w-full space-y-8">
-                    <div className="flex justify-between items-end">
+                <div className="px-4 sm:px-12 py-8 max-w-4xl mx-auto w-full space-y-8">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
                         <div>
-                            <p className="text-xs font-bold uppercase text-secondary tracking-widest">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</p>
-                            <h2 className="text-5xl">Today's Focus</h2>
+                            <p className="text-[10px] sm:text-xs font-bold uppercase text-secondary tracking-widest">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</p>
+                            <h2 className="text-3xl sm:text-5xl">Today's Focus</h2>
                         </div>
                         <button
                             onClick={() => setIsAddTaskOpen(true)}
-                            className="bg-stone-900 dark:bg-white text-white dark:text-stone-900 px-4 py-2 text-xs font-bold uppercase tracking-wider flex items-center gap-2"
+                            className="hidden sm:flex bg-stone-900 dark:bg-white text-white dark:text-stone-900 px-4 py-2 text-xs font-bold uppercase tracking-wider items-center gap-2 shadow-md active:scale-95 transition-transform"
                         >
                             <span className="material-symbols-outlined text-sm">add</span> Add Task
                         </button>
                     </div>
 
-                    <div className="bg-white dark:bg-surface-dark border border-border-light dark:border-border-dark p-8 space-y-6 shadow-sm">
-                        <div className="flex justify-between items-center">
-                            <h3 className="text-xl">Today's Capacity</h3>
+                    <div className="bg-white dark:bg-surface-dark border border-border-light dark:border-border-dark p-4 sm:p-8 space-y-6 shadow-sm relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 -mr-16 -mt-16 rounded-full blur-3xl pointer-events-none"></div>
+                        <div className="flex justify-between items-center relative z-10">
+                            <h3 className="text-lg sm:text-xl">Today's Capacity</h3>
                             {capacityPercent >= 80 && (
-                                <span className="text-primary text-xs font-bold uppercase flex items-center gap-1">
-                                    <span className="material-symbols-outlined text-sm">bolt</span> Cutting it close
+                                <span className="text-primary text-[10px] sm:text-xs font-bold uppercase flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-base sm:text-sm">bolt</span> <span className="hidden xs:inline">Cutting it close</span>
                                 </span>
                             )}
                         </div>
 
-                        <div className="h-4 bg-stone-100 dark:bg-stone-800 w-full relative">
+                        <div className="h-4 bg-stone-100 dark:bg-stone-800 w-full relative z-10">
                             <div className="absolute top-0 left-0 h-full bg-primary transition-all duration-500" style={{ width: `${capacityPercent}%` }}></div>
                             <div className="absolute top-0 right-0 h-full bg-stone-200/50 flex transition-all duration-500" style={{ width: `${100 - capacityPercent}%`, background: 'repeating-linear-gradient(45deg, #e5e5e5, #e5e5e5 10px, #f2f2f2 10px, #f2f2f2 20px)' }}></div>
-                            <span className="absolute top-full mt-1 right-0 sm:right-auto text-[10px] font-bold text-white bg-primary px-1 transition-all duration-500" style={{ left: `max(0%, calc(${capacityPercent}% - 30px))` }}>{capacityPercent}%</span>
+                            <span className="absolute top-full mt-1 text-[10px] font-bold text-white bg-primary px-1 transition-all duration-500" style={{ left: `max(0%, min(calc(100% - 30px), calc(${capacityPercent}% - 15px)))` }}>{capacityPercent}%</span>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-8 pt-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 pt-4 relative z-10">
                             <Stat label="Available" value={formatTime(totalCurrentCapacityMins)} />
                             <Stat label="Planned" value={formatTime(plannedMins)} />
                             <Stat label="Buffer" value={formatTime(bufferMins)} highlight={bufferMins < 60} />
@@ -209,33 +251,33 @@ function NavItem({ icon, label, active }) {
 
 function Stat({ label, value, highlight }) {
     return (
-        <div className="border-l border-border-light dark:border-border-dark pl-4">
-            <p className="text-[10px] font-bold uppercase text-secondary tracking-widest">{label}</p>
-            <p className={`text-xl font-sans mt-1 ${highlight ? 'text-primary' : ''}`}>{value}</p>
+        <div className="border-l border-border-light dark:border-border-dark pl-4 py-1 sm:py-0">
+            <p className="text-[9px] sm:text-[10px] font-bold uppercase text-secondary tracking-widest">{label}</p>
+            <p className={`text-lg sm:text-xl font-sans mt-0 sm:mt-1 ${highlight ? 'text-primary' : ''}`}>{value}</p>
         </div>
     )
 }
 
 function TaskItem({ title, duration, priority, subtasks, category, color, suggested }) {
     return (
-        <div className={`bg-white dark:bg-surface-dark border border-border-white dark:border-border-dark border-l-4 ${color} p-4 shadow-sm flex items-center justify-between`}>
-            <div className="flex items-center gap-4">
+        <div className={`bg-white dark:bg-surface-dark border border-border-white dark:border-border-dark border-l-4 ${color} p-3 sm:p-4 shadow-sm flex items-center justify-between gap-3`}>
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                 <div className="w-5 h-5 border-2 border-stone-200 dark:border-stone-700 rounded-full shrink-0"></div>
                 <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                         <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${priority === 'URGENT' ? 'bg-red-50 text-red-600' : 'bg-stone-50 text-stone-500'}`}>
                             {priority}
                         </span>
-                        <p className={`text-sm font-bold truncate ${suggested ? 'text-stone-400 line-through' : ''}`}>{title}</p>
+                        <p className={`text-xs sm:text-sm font-bold truncate ${suggested ? 'text-stone-400 line-through' : ''}`}>{title}</p>
                     </div>
-                    <div className="flex items-center gap-3 mt-1 text-[10px] text-secondary flex-wrap">
-                        <span className="flex items-center gap-1 whitespace-nowrap"><span className="material-symbols-outlined text-[12px]">account_tree</span> {subtasks} subtasks</span>
-                        <span className="flex items-center gap-1 whitespace-nowrap"><span className="material-symbols-outlined text-[12px]">folder</span> {category.replace('_', ' ')}</span>
-                        {suggested && <span className="text-primary font-bold">● Suggested deferral</span>}
+                    <div className="flex items-center gap-2 sm:gap-3 mt-1 text-[9px] sm:text-[10px] text-secondary flex-wrap">
+                        <span className="flex items-center gap-1 whitespace-nowrap"><span className="material-symbols-outlined text-[10px] sm:text-[12px]">account_tree</span> {subtasks} <span className="hidden xs:inline">subtasks</span></span>
+                        <span className="flex items-center gap-1 whitespace-nowrap"><span className="material-symbols-outlined text-[10px] sm:text-[12px]">folder</span> {category.replace('_', ' ')}</span>
+                        {suggested && <span className="text-primary font-bold">● Suggested <span className="hidden xs:inline">deferral</span></span>}
                     </div>
                 </div>
             </div>
-            <div className="text-stone-400 text-xs font-bold bg-stone-50 dark:bg-stone-800 px-3 py-1 border border-stone-100 dark:border-stone-700 shrink-0 ml-2">
+            <div className="text-stone-400 text-[10px] sm:text-xs font-bold bg-stone-50 dark:bg-stone-800 px-2 sm:px-3 py-1 border border-stone-100 dark:border-stone-700 shrink-0">
                 {duration}
             </div>
         </div>
