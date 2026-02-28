@@ -35,8 +35,8 @@ This list tracks the remaining work for Person 2 and Person 3 based on the PRD a
 
 - [ ] **Infrastructure & Security**
     - [x] Basic Auth and JWT Session management
-    - [ ] API Rate Limiting for all endpoints
-    - [ ] Mobile-specific security (Biometric/PIN fallback)
+    - [x] API Rate Limiting for all endpoints
+    - [] Mobile-specific security (Biometric/PIN fallback)
 - [ ] **Data Governance & Privacy**
     - [ ] Encryption at rest for PII (Personal Identifiable Information)
     - [ ] GDPR Data Export utility

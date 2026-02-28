@@ -10,6 +10,7 @@ export default function DailyDashboard() {
     const { user, token, logout } = useAuth();
     const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
     const [isReflectionOpen, setIsReflectionOpen] = useState(false);
+    const [selectedTask, setSelectedTask] = useState(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const [tasks, setTasks] = useState([]);
@@ -64,7 +65,12 @@ export default function DailyDashboard() {
     return (
         <div className="flex h-screen overflow-hidden relative">
             <AddTaskModal isOpen={isAddTaskOpen} onClose={() => { setIsAddTaskOpen(false); fetchTasks(); }} />
-            <TaskReflectionPanel isOpen={isReflectionOpen} onClose={() => setIsReflectionOpen(false)} />
+            <TaskReflectionPanel
+                isOpen={isReflectionOpen}
+                onClose={() => { setIsReflectionOpen(false); setSelectedTask(null); }}
+                task={selectedTask}
+                onTaskUpdated={fetchTasks}
+            />
 
             {/* Mobile Header */}
             <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-surface-light dark:bg-surface-dark border-b border-border-light dark:border-border-dark flex items-center justify-between px-4 z-40">
@@ -219,7 +225,7 @@ export default function DailyDashboard() {
                                 </div>
                             ) : (
                                 tasks.map((task) => (
-                                    <div key={task.id} onClick={() => setIsReflectionOpen(true)} className="cursor-pointer">
+                                    <div key={task.id} onClick={() => { setSelectedTask(task); setIsReflectionOpen(true); }} className="cursor-pointer">
                                         <TaskItem
                                             title={task.title}
                                             duration={formatTime(task.estimated_time)}
