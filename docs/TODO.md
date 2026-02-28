@@ -7,11 +7,11 @@ This list tracks the remaining work for Person 2 and Person 3 based on the PRD a
 
 - [ ] **Daily Dashboard Intelligence**
     - [x] Mobile responsiveness shells
-    - [ ] Replace mock sum logic with actual capacity calculator API
+    - [x] Replace mock sum logic with actual capacity calculator API
     - [ ] Implement live "Burnout Risk" alerts based on backend events
 - [ ] **Weekly Planning Interface**
     - [x] Mobile-friendly 7-day grid
-    - [ ] Drag-and-drop task rescheduling logic
+    - [x] Drag-and-drop task rescheduling logic
     - [ ] Overcommitment heatmap visualization
     - [ ] "Suggested Redistribution" toggle UI
 - [ ] **Intelligent Task Breakdown UI**
@@ -28,7 +28,7 @@ This list tracks the remaining work for Person 2 and Person 3 based on the PRD a
     - [ ] Real-time sync status indicator
 - [ ] **User Onboarding**
     - [ ] Interactive walkthrough for first-time users
-    - [ ] Initial "Preference Setting" flow
+    - [x] Initial "Preference Setting" flow
 
 ## 🏗️ Person 3: Foundation Builder (Product/Backend)
 *Current Focus: Business logic, capacity engine, and launch operations.*

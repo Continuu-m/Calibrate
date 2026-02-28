@@ -30,7 +30,7 @@ from app.models.task import TaskStatus
 from app.auth.dependencies import get_current_user
 from app.tasks import service
 from app.tasks.schemas import (
-    TaskCreate, TaskUpdate, TaskResponse, TaskListResponse, SubtaskResponse
+    TaskCreate, TaskUpdate, TaskResponse, TaskListResponse, SubtaskResponse, CapacityResponse
 )
 from app.limiter import limiter
 from app.services.digest_service import generate_user_digest
@@ -89,6 +89,17 @@ def get_tasks(
         page=page,
         page_size=page_size
     )
+
+
+@router.get("/capacity", response_model=CapacityResponse)
+def get_capacity(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get daily capacity, overcommitment severity, and energy budget.
+    """
+    return service.get_daily_capacity(db, current_user)
 
 
 @router.get("/{task_id}", response_model=TaskResponse)

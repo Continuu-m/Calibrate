@@ -14,6 +14,7 @@ export default function DailyDashboard() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const [tasks, setTasks] = useState([]);
+    const [capacityData, setCapacityData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
@@ -26,8 +27,12 @@ export default function DailyDashboard() {
     const fetchTasks = async () => {
         try {
             setLoading(true);
-            const data = await TaskService.getTasks(token, 'planned'); // Could also fetch all and filter client-side
+            const [data, capData] = await Promise.all([
+                TaskService.getTasks(token, 'planned'),
+                TaskService.getCapacity(token)
+            ]);
             setTasks(data.tasks || []);
+            setCapacityData(capData);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -36,11 +41,10 @@ export default function DailyDashboard() {
     };
 
     // Calculate dynamic stats
-    const totalCurrentCapacityMins = user?.preferences?.work_hours_per_day ? user.preferences.work_hours_per_day * 60 : 8 * 60; // default 8h
-    const plannedMins = tasks.reduce((total, task) => total + (task.estimated_time || 0), 0);
-    const bufferMins = Math.max(0, totalCurrentCapacityMins - plannedMins);
-
-    const capacityPercent = Math.min(100, Math.round((plannedMins / totalCurrentCapacityMins) * 100)) || 0;
+    const totalCurrentCapacityMins = capacityData?.total_capacity_mins || (user?.preferences?.work_hours_per_day ? user.preferences.work_hours_per_day * 60 : 8 * 60);
+    const plannedMins = capacityData?.planned_mins || 0;
+    const bufferMins = capacityData?.buffer_mins || 0;
+    const capacityPercent = capacityData?.capacity_percent || 0;
 
     // Format minutes to "Xh Ymin"
     const formatTime = (mins) => {
@@ -151,13 +155,16 @@ export default function DailyDashboard() {
             </aside>
 
             <main className="flex-1 flex flex-col overflow-y-auto pt-16 lg:pt-0">
-                {capacityPercent > (user?.preferences?.alert_caution_threshold || 80) && (
-                    <div className="bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200 px-6 py-2 text-xs flex justify-between items-center border-b border-red-200 dark:border-red-800/50">
+                {capacityData?.severity && capacityData.severity !== 'none' && (
+                    <div className={`px-6 py-2 text-xs flex justify-between items-center border-b ${capacityData.severity === 'critical' ? 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200 border-red-200 dark:border-red-800/50' :
+                            capacityData.severity === 'warning' ? 'bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-200 border-orange-200 dark:border-orange-800/50' :
+                                'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 border-yellow-200 dark:border-yellow-800/50'
+                        }`}>
                         <div className="flex items-center gap-2">
                             <span className="material-symbols-outlined text-sm">warning</span>
-                            <span>You're close to your limit. Consider deferring your lowest priority tasks to tomorrow.</span>
+                            <span>{capacityData.alert_message}</span>
                         </div>
-                        <button className="material-symbols-outlined text-sm">close</button>
+                        <button className="material-symbols-outlined text-sm" onClick={() => setCapacityData({ ...capacityData, severity: 'none' })}>close</button>
                     </div>
                 )}
 

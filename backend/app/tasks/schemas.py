@@ -107,3 +107,13 @@ class TaskListResponse(BaseModel):
     total: int
     page: int
     page_size: int
+
+class CapacityResponse(BaseModel):
+    """Daily capacity and overcommitment metrics."""
+    total_capacity_mins: int
+    planned_mins: int
+    buffer_mins: int
+    capacity_percent: int
+    severity: str           # "none", "caution", "warning", "critical"
+    alert_message: Optional[str] = None
+    energy_budget: dict     # e.g., {"creative": 120, "administrative": 45}

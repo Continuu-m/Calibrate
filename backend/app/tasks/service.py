@@ -25,7 +25,8 @@ from fastapi import HTTPException, status
 from datetime import datetime
 
 from app.models.task import Task, Subtask, TaskStatus
-from app.tasks.schemas import TaskCreate, TaskUpdate
+from app.models.user import User
+from app.tasks.schemas import TaskCreate, TaskUpdate, CapacityResponse
 
 
 def create_task(db: Session, user_id: int, payload: TaskCreate) -> Task:
@@ -187,3 +188,56 @@ def complete_subtask(db: Session, task_id: int, subtask_id: int, user_id: int) -
     db.commit()
     db.refresh(subtask)
     return subtask
+
+
+def get_daily_capacity(db: Session, user: User) -> CapacityResponse:
+    """
+    Calculate real-time capacity and overcommitment detection.
+    """
+    prefs = user.preferences or {}
+    work_hours = prefs.get("work_hours_per_day", 8)
+    caution_threshold = prefs.get("alert_caution_threshold", 80)
+    
+    total_capacity_mins = int(work_hours * 60)
+    
+    # Get all planned tasks for this user
+    # (Assuming planned tasks reflect today's queue as per current design)
+    tasks = db.query(Task).filter(
+        Task.user_id == user.id,
+        Task.status == TaskStatus.planned
+    ).all()
+    
+    planned_mins = int(sum(t.estimated_time or 0 for t in tasks))
+    buffer_mins = max(0, total_capacity_mins - planned_mins)
+    
+    capacity_percent = 0
+    if total_capacity_mins > 0:
+        capacity_percent = int((planned_mins / total_capacity_mins) * 100)
+        
+    severity = "none"
+    alert_message = None
+    
+    if capacity_percent > 120:
+        severity = "critical"
+        alert_message = "This week you're planning more work than available. This is a burnout risk pattern. Please defer tasks."
+    elif capacity_percent > 100:
+        severity = "warning"
+        alert_message = f"You have {format(planned_mins/60, '.1f')} hours of tasks planned but only {work_hours} hours available. Recommend deferring tasks."
+    elif capacity_percent >= caution_threshold:
+        severity = "caution"
+        alert_message = f"You're at {capacity_percent}% capacity. Consider moving one task to tomorrow."
+        
+    energy_budget = {}
+    for t in tasks:
+        t_type = t.task_type.value if t.task_type else "unknown"
+        energy_budget[t_type] = energy_budget.get(t_type, 0) + int(t.estimated_time or 0)
+        
+    return CapacityResponse(
+        total_capacity_mins=total_capacity_mins,
+        planned_mins=planned_mins,
+        buffer_mins=buffer_mins,
+        capacity_percent=capacity_percent,
+        severity=severity,
+        alert_message=alert_message,
+        energy_budget=energy_budget
+    )
