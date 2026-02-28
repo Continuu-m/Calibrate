@@ -84,8 +84,28 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
     };
 
+    const updatePreferences = async (preferences) => {
+        const response = await fetch(`${API_URL}/auth/preferences`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ preferences })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to update preferences');
+        }
+
+        const updatedUser = await response.json();
+        setUser(updatedUser);
+        return updatedUser;
+    };
+
     return (
-        <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+        <AuthContext.Provider value={{ user, token, loading, login, register, logout, updatePreferences }}>
             {children}
         </AuthContext.Provider>
     );

@@ -38,6 +38,12 @@ class LoginRequest(BaseModel):
     email: EmailStr
     password: str
 
+class PreferencesUpdate(BaseModel):
+    """
+    What we expect when a user updates their preferences.
+    """
+    preferences: dict
+
 
 # ─── Response Schemas (what we send back) ─────────────────────────────────────
 
@@ -59,6 +65,7 @@ class UserResponse(BaseModel):
     id: int
     email: str
     full_name: str | None
+    preferences: dict | None = None
 
     class Config:
         from_attributes = True  # Allows converting SQLAlchemy model → this schema

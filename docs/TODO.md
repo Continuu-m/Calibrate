@@ -47,7 +47,7 @@ This list tracks the remaining work for Person 2 and Person 3 based on the PRD a
     - [ ] Dynamic "Energy Budget" tracker
 - [ ] **Alert & Notification System**
     - [ ] Overcommitment severity classifier (Caution vs Warning vs Critical)
-    - [ ] Email digest generator (Daily Summary)
+    - [x] Email digest generator (Daily Summary)
     - [ ] In-app notification bus
 - [ ] **Beta Program Operations**
     - [ ] Feedback collection tool integration (PostHog/Mixpanel)

@@ -6,10 +6,11 @@ import Insights from './pages/Insights'
 import Settings from './pages/Settings'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import Onboarding from './pages/Onboarding'
 import { AuthProvider, useAuth } from './context/AuthContext'
 
 function ProtectedRoute({ children }) {
-    const { token, loading } = useAuth();
+    const { token, user, loading } = useAuth();
 
     if (loading) {
         return (
@@ -19,8 +20,33 @@ function ProtectedRoute({ children }) {
         );
     }
 
-    if (!token) {
+    if (!token || (!user && !loading)) {
         return <Navigate to="/login" />;
+    }
+
+    // New logic: if logged in but not onboarded, force them to onboarding
+    if (user && !user.preferences?.onboarded) {
+        return <Navigate to="/onboarding" />;
+    }
+
+    return children;
+}
+
+function OnboardingRoute({ children }) {
+    const { token, user, loading } = useAuth();
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark">
+                <div className="text-secondary tracking-widest uppercase text-xs font-bold animate-pulse">Calibrating...</div>
+            </div>
+        );
+    }
+
+    if (!token) return <Navigate to="/login" />;
+
+    if (user && user.preferences?.onboarded) {
+        return <Navigate to="/" />; // Already onboarded
     }
 
     return children;
@@ -35,6 +61,11 @@ function App() {
                     <Routes>
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
+                        <Route path="/onboarding" element={
+                            <OnboardingRoute>
+                                <Onboarding />
+                            </OnboardingRoute>
+                        } />
 
                         <Route path="/" element={
                             <ProtectedRoute>
