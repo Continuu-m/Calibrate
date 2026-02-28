@@ -20,7 +20,9 @@ SECURITY DESIGN DECISIONS:
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
+import os
 
 from app.db.database import get_db
 from app.models.user import User
@@ -151,4 +153,83 @@ def update_profile(
     db.commit()
     db.refresh(current_user)
     
+    return current_user
+
+
+# ─── Google Calendar OAuth ─────────────────────────────────────────────────────
+
+@router.get("/google/connect")
+def google_connect(
+    request: Request,
+    token: str = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Step 1: Redirect user to Google's OAuth consent screen.
+    The user's JWT is embedded in the `state` param so we can identify them in the callback.
+    Accepts the token via Authorization header OR ?token= query param (for browser redirects).
+    """
+    from app.integrations.google_calendar import get_google_auth_url
+    from app.auth.dependencies import get_current_user_from_token
+
+    # Read token from query param if no Authorization header present
+    auth_header = request.headers.get("authorization", "")
+    resolved_token = token or auth_header.removeprefix("Bearer ").strip()
+
+    if not resolved_token:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    # Validate the token so only real users can start the flow
+    get_current_user_from_token(resolved_token, db)
+
+    auth_url = get_google_auth_url(state=resolved_token)
+    return RedirectResponse(url=auth_url)
+
+
+@router.get("/google/callback")
+def google_callback(
+    code: str,
+    state: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Step 2: Google redirects here with the auth code.
+    We exchange the code for tokens and store them on the user.
+    """
+    from app.integrations.google_calendar import exchange_code_for_tokens
+    from app.auth.dependencies import get_current_user_from_token
+
+    frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:5173")
+
+    try:
+        # Identify the user from the state (which is their JWT)
+        user = get_current_user_from_token(token=state, db=db)
+    except Exception:
+        return RedirectResponse(url=f"{frontend_url}/settings?google_error=invalid_state")
+
+    try:
+        tokens = exchange_code_for_tokens(code)
+        user.google_access_token = tokens["access_token"]
+        user.google_refresh_token = tokens["refresh_token"]
+        user.google_calendar_connected = True
+        db.commit()
+    except Exception as e:
+        return RedirectResponse(url=f"{frontend_url}/settings?google_error=token_exchange_failed")
+
+    return RedirectResponse(url=f"{frontend_url}/settings?google_connected=true")
+
+
+@router.delete("/google/disconnect", response_model=UserResponse)
+def google_disconnect(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Revoke the user's Google Calendar connection.
+    """
+    current_user.google_access_token = None
+    current_user.google_refresh_token = None
+    current_user.google_calendar_connected = False
+    db.commit()
+    db.refresh(current_user)
     return current_user

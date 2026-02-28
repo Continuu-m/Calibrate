@@ -124,8 +124,12 @@ export const AuthProvider = ({ children }) => {
         return updatedUser;
     };
 
+    const refreshUser = async () => {
+        if (token) await fetchUser();
+    };
+
     return (
-        <AuthContext.Provider value={{ user, token, loading, login, register, logout, updatePreferences, updateProfile }}>
+        <AuthContext.Provider value={{ user, token, loading, login, register, logout, updatePreferences, updateProfile, refreshUser }}>
             {children}
         </AuthContext.Provider>
     );

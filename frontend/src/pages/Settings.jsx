@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 export default function Settings() {
-    const { user, updateProfile, updatePreferences } = useAuth();
+    const { user, token, updateProfile, updatePreferences, refreshUser } = useAuth();
 
     // Profile State
     const [fullName, setFullName] = useState(user?.full_name || '');
@@ -15,7 +17,22 @@ export default function Settings() {
     const [notificationsEnabled, setNotificationsEnabled] = useState(user?.preferences?.notifications_enabled ?? true);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [message, setMessage] = useState({ type: '', text: '' }); // type: 'success' or 'error'
+    const [message, setMessage] = useState({ type: '', text: '' });
+    const [isDisconnecting, setIsDisconnecting] = useState(false);
+
+    // Detect redirect back from Google's OAuth flow
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('google_connected') === 'true') {
+            setMessage({ type: 'success', text: 'Google Calendar connected successfully!' });
+            // Clean up the URL param
+            window.history.replaceState({}, '', '/settings');
+            if (refreshUser) refreshUser();
+        } else if (params.get('google_error')) {
+            setMessage({ type: 'error', text: 'Failed to connect Google Calendar. Please try again.' });
+            window.history.replaceState({}, '', '/settings');
+        }
+    }, []);
 
     const handleSave = async () => {
         setIsSubmitting(true);
@@ -56,8 +73,8 @@ export default function Settings() {
 
             {message.text && (
                 <div className={`mb-6 p-4 text-sm font-bold flex items-center gap-2 ${message.type === 'error'
-                        ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 border border-red-100 dark:border-red-900/40'
-                        : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40'
+                    ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 border border-red-100 dark:border-red-900/40'
+                    : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40'
                     }`}>
                     <span className="material-symbols-outlined text-sm">
                         {message.type === 'error' ? 'error' : 'check_circle'}
@@ -174,12 +191,72 @@ export default function Settings() {
                         </div>
                     </label>
 
-                    <div className="border border-border-light dark:border-border-dark p-4 bg-white dark:bg-surface-dark flex justify-between items-center opacity-50 cursor-not-allowed">
+                    {/* Google Calendar Integration */}
+                    <div className={`border border-border-light dark:border-border-dark p-4 bg-white dark:bg-surface-dark flex justify-between items-center ${user?.google_calendar_connected ? '' : ''}`}>
                         <div className="space-y-1 select-none">
-                            <p className="text-sm font-bold">Google Calendar Integration</p>
-                            <p className="text-[10px] text-secondary">Automatically import events as tasks (Coming Soon)</p>
+                            <p className="text-sm font-bold flex items-center gap-2">
+                                <span className="material-symbols-outlined text-base">event</span>
+                                Google Calendar Integration
+                            </p>
+                            <p className="text-[10px] text-secondary">
+                                {user?.google_calendar_connected
+                                    ? 'Your calendar events are being synced to Calibrate.'
+                                    : 'Connect to automatically import events as tasks.'}
+                            </p>
                         </div>
-                        <span className="text-xs font-bold text-stone-400">DISCONNECTED</span>
+                        {user?.google_calendar_connected ? (
+                            <div className="flex items-center gap-3">
+                                <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-sm">check_circle</span>
+                                    CONNECTED
+                                </span>
+                                <button
+                                    onClick={async () => {
+                                        setIsDisconnecting(true);
+                                        try {
+                                            const res = await fetch(`${API_URL}/auth/google/disconnect`, {
+                                                method: 'DELETE',
+                                                headers: { Authorization: `Bearer ${token}` }
+                                            });
+                                            if (!res.ok) throw new Error();
+                                            setMessage({ type: 'success', text: 'Google Calendar disconnected.' });
+                                            if (refreshUser) refreshUser();
+                                        } catch {
+                                            setMessage({ type: 'error', text: 'Failed to disconnect. Try again.' });
+                                        } finally {
+                                            setIsDisconnecting(false);
+                                        }
+                                    }}
+                                    disabled={isDisconnecting}
+                                    className="text-xs font-bold text-stone-500 hover:text-red-600 border border-stone-200 dark:border-stone-700 px-3 py-1.5 transition-colors disabled:opacity-50"
+                                >
+                                    {isDisconnecting ? 'Disconnecting...' : 'Disconnect'}
+                                </button>
+                            </div>
+                        ) : (
+                            <a
+                                href={`${API_URL}/auth/google/connect`}
+                                onClick={(e) => {
+                                    // Pass the token via a custom header isn't possible with plain redirect.
+                                    // Instead open as a fetch-initiated redirect with the token in headers.
+                                    e.preventDefault();
+                                    // We fetch the connect URL to get the redirect then follow it
+                                    fetch(`${API_URL}/auth/google/connect`, {
+                                        headers: { Authorization: `Bearer ${token}` },
+                                        redirect: 'manual'
+                                    }).then(res => {
+                                        // Browser blocks access to redirect URL from manual fetch.
+                                        // Best approach: open the connect endpoint URL with token appended as query param.
+                                        // Backend reads it from the state, which we set to the token.
+                                        window.location.href = `${API_URL}/auth/google/connect?token=${token}`;
+                                    });
+                                }}
+                                className="text-xs font-bold bg-primary hover:bg-red-700 text-white px-4 py-2 transition-colors flex items-center gap-1.5"
+                            >
+                                <span className="material-symbols-outlined text-sm">add_link</span>
+                                Connect
+                            </a>
+                        )}
                     </div>
                 </section>
 
