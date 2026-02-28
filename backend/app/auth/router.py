@@ -24,7 +24,7 @@ from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.models.user import User
-from app.auth.schemas import RegisterRequest, LoginRequest, TokenResponse, UserResponse, PreferencesUpdate
+from app.auth.schemas import RegisterRequest, LoginRequest, TokenResponse, UserResponse, PreferencesUpdate, ProfileUpdate
 from app.auth.utils import hash_password, verify_password, create_access_token
 from app.auth.dependencies import get_current_user
 from app.limiter import limiter
@@ -130,6 +130,24 @@ def update_preferences(
     updated_prefs = {**current_prefs, **payload.preferences}
     
     current_user.preferences = updated_prefs
+    db.commit()
+    db.refresh(current_user)
+    
+    return current_user
+
+
+@router.patch("/profile", response_model=UserResponse)
+def update_profile(
+    payload: ProfileUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Updates the user's basic profile details (e.g., full name).
+    """
+    if payload.full_name is not None:
+        current_user.full_name = payload.full_name
+        
     db.commit()
     db.refresh(current_user)
     

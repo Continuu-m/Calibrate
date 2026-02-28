@@ -44,6 +44,12 @@ class PreferencesUpdate(BaseModel):
     """
     preferences: dict
 
+class ProfileUpdate(BaseModel):
+    """
+    What we expect when a user updates their basic profile.
+    """
+    full_name: str | None = None
+
 
 # ─── Response Schemas (what we send back) ─────────────────────────────────────
 
