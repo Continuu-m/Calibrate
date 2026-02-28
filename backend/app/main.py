@@ -12,12 +12,23 @@ from app.models import *  # Registers all models with Base.metadata
 from app.auth.router import router as auth_router
 from app.tasks.router import router as tasks_router
 from app.limiter import limiter
+from app.scheduler import setup_scheduler, shutdown_scheduler
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    setup_scheduler()
+    yield
+    # Shutdown
+    shutdown_scheduler()
 
 limiter = limiter
 app = FastAPI(
     title="Calibrate API",
     version="0.1.0",
-    description="Task Reality Checker — AI-powered time estimation"
+    description="Task Reality Checker — AI-powered time estimation",
+    lifespan=lifespan
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
