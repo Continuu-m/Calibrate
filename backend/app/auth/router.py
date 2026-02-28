@@ -24,15 +24,18 @@ from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.models.user import User
-from app.auth.schemas import RegisterRequest, LoginRequest, TokenResponse, UserResponse
+from app.auth.schemas import RegisterRequest, LoginRequest, TokenResponse, UserResponse, PreferencesUpdate
 from app.auth.utils import hash_password, verify_password, create_access_token
 from app.auth.dependencies import get_current_user
+from app.limiter import limiter
+from fastapi import Request
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @router.post("/register", response_model=UserResponse, status_code=201)
-def register(payload: RegisterRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def register(request: Request, payload: RegisterRequest, db: Session = Depends(get_db)):
     """
     Create a new user account.
 
@@ -72,7 +75,8 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(payload: LoginRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)):
     """
     Authenticate and return a JWT token.
 
@@ -109,4 +113,24 @@ def get_me(current_user: User = Depends(get_current_user)):
     This is also a good route to test that your token works:
     GET /auth/me with Authorization: Bearer <your_token>
     """
+    return current_user
+
+
+@router.patch("/preferences", response_model=UserResponse)
+def update_preferences(
+    payload: PreferencesUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Updates the user's preferences dictionary.
+    """
+    # Merge existing preferences with new ones
+    current_prefs = current_user.preferences or {}
+    updated_prefs = {**current_prefs, **payload.preferences}
+    
+    current_user.preferences = updated_prefs
+    db.commit()
+    db.refresh(current_user)
+    
     return current_user

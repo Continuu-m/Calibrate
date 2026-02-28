@@ -1,5 +1,59 @@
-export default function TaskReflectionPanel({ isOpen, onClose }) {
-    if (!isOpen) return null;
+import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import TaskService from '../services/TaskService';
+
+export default function TaskReflectionPanel({ isOpen, onClose, task, onTaskUpdated }) {
+    const { token } = useAuth();
+    const [actualTimeInput, setActualTimeInput] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (task) {
+            setActualTimeInput(task.estimated_time?.toString() || '');
+            setError('');
+        }
+    }, [task]);
+
+    if (!isOpen || !task) return null;
+
+    const handleComplete = async () => {
+        setIsSubmitting(true);
+        setError('');
+        try {
+            const actualTimeMins = parseInt(actualTimeInput, 10) || task.estimated_time;
+            await TaskService.completeTask(token, task.id, actualTimeMins);
+            onTaskUpdated?.();
+            onClose();
+        } catch (err) {
+            setError(err.message || 'Failed to complete task');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!window.confirm('Are you sure you want to delete this task?')) return;
+        setIsSubmitting(true);
+        setError('');
+        try {
+            await TaskService.deleteTask(token, task.id);
+            onTaskUpdated?.();
+            onClose();
+        } catch (err) {
+            setError(err.message || 'Failed to delete task');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // Format minutes to "Xh Ymin"
+    const formatTime = (mins) => {
+        if (!mins) return '0min';
+        const h = Math.floor(mins / 60);
+        const m = Math.round(mins % 60);
+        return `${h > 0 ? h + 'h ' : ''}${m}min`;
+    };
 
     return (
         <div className="fixed inset-0 z-[100] flex justify-end">
@@ -16,23 +70,38 @@ export default function TaskReflectionPanel({ isOpen, onClose }) {
                         <span className="text-[10px] font-bold uppercase tracking-widest">TASK COMPLETE</span>
                     </div>
 
+                    {error && (
+                        <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 text-xs border border-red-100 dark:border-red-900/40 flex items-center gap-2">
+                            <span className="material-symbols-outlined text-sm">error</span>
+                            {error}
+                        </div>
+                    )}
+
                     <div className="space-y-4">
-                        <h1 className="text-3xl sm:text-5xl">Finalize investor pitch deck</h1>
+                        <h1 className="text-3xl sm:text-5xl">{task.title}</h1>
                         <div className="flex items-center gap-2 text-stone-400 text-sm">
                             <span className="material-symbols-outlined text-sm">calendar_today</span>
-                            <span>Today, Oct 24</span>
+                            <span>{task.scheduled_date ? new Date(task.scheduled_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Today'}</span>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-px bg-border-light dark:bg-border-dark pt-4 border-t border-border-light dark:border-border-dark">
                         <div className="bg-white dark:bg-surface-dark pr-2 sm:pr-4">
                             <label className="text-[9px] sm:text-[10px] font-bold uppercase text-secondary tracking-widest">ESTIMATED</label>
-                            <p className="text-lg sm:text-xl text-stone-300 font-sans mt-1 sm:mt-2">2h 00min</p>
+                            <p className="text-lg sm:text-xl text-stone-300 font-sans mt-1 sm:mt-2">{formatTime(task.estimated_time)}</p>
                         </div>
-                        <div className="bg-white dark:bg-surface-dark pl-2 sm:pl-4 border-l border-border-light dark:border-border-dark relative">
-                            <label className="text-[9px] sm:text-[10px] font-bold uppercase text-secondary tracking-widest">ACTUAL TIME</label>
-                            <p className="text-lg sm:text-xl font-sans mt-1 sm:mt-2 border-b-2 border-primary inline-block">3h 15min</p>
-                            <button className="material-symbols-outlined text-primary text-sm absolute right-0 bottom-1">edit</button>
+                        <div className="bg-white dark:bg-surface-dark pl-2 sm:pl-4 border-l border-border-light dark:border-border-dark relative flex flex-col">
+                            <label className="text-[9px] sm:text-[10px] font-bold uppercase text-secondary tracking-widest">ACTUAL TIME (MINS)</label>
+                            <div className="flex items-center mt-1 sm:mt-2 border-b-2 border-primary w-24">
+                                <input
+                                    type="number"
+                                    value={actualTimeInput}
+                                    onChange={(e) => setActualTimeInput(e.target.value)}
+                                    className="text-lg sm:text-xl font-sans w-full bg-transparent border-none p-0 focus:ring-0"
+                                    min="1"
+                                    disabled={isSubmitting}
+                                />
+                            </div>
                         </div>
                     </div>
 
@@ -63,9 +132,20 @@ export default function TaskReflectionPanel({ isOpen, onClose }) {
                     </div>
                 </div>
 
-                <footer className="p-4 sm:p-8 border-t border-border-light dark:border-border-dark bg-stone-50/30 dark:bg-stone-900/30 sticky bottom-0">
-                    <button className="w-full bg-primary hover:bg-red-700 text-white font-bold uppercase text-xs sm:text-sm tracking-widest py-3 sm:py-4 transition-colors flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]">
-                        SAVE REFLECTION <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                <footer className="p-4 sm:p-8 border-t border-border-light dark:border-border-dark bg-stone-50/30 dark:bg-stone-900/30 sticky bottom-0 flex flex-col gap-3">
+                    <button
+                        onClick={handleComplete}
+                        disabled={isSubmitting}
+                        className="w-full bg-primary hover:bg-red-700 text-white font-bold uppercase text-xs sm:text-sm tracking-widest py-3 sm:py-4 transition-colors flex items-center justify-center gap-2 shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:hover:bg-primary"
+                    >
+                        {isSubmitting ? 'SAVING...' : 'SAVE REFLECTION'} <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                    </button>
+                    <button
+                        onClick={handleDelete}
+                        disabled={isSubmitting}
+                        className="w-full bg-transparent border border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 font-bold uppercase text-xs sm:text-sm tracking-widest py-3 sm:py-4 transition-colors active:scale-[0.98] disabled:opacity-50"
+                    >
+                        DELETE TASK
                     </button>
                 </footer>
             </div>

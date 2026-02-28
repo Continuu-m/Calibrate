@@ -32,6 +32,8 @@ from app.tasks import service
 from app.tasks.schemas import (
     TaskCreate, TaskUpdate, TaskResponse, TaskListResponse, SubtaskResponse
 )
+from app.limiter import limiter
+from app.services.digest_service import generate_user_digest
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
@@ -159,3 +161,16 @@ def complete_subtask(
 ):
     """Mark a single subtask as completed."""
     return service.complete_subtask(db, task_id, subtask_id, current_user.id)
+
+
+@router.post("/test-digest", status_code=202)
+async def test_digest(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Manually trigger the daily digest email for the current user.
+    Uses fastapi-mail. This is for testing the Email Digest Generator PRD requirement.
+    """
+    await generate_user_digest(db, current_user)
+    return {"message": f"Digest email triggered for {current_user.email}"}

@@ -177,4 +177,4 @@ Then call `GET /auth/me` — you should get your user back.
 - Refresh tokens (longer-lived, used to get new access tokens)
 - Redis token blocklist (enables true logout)
 - Email verification on register
-- Rate limiting on login (prevents brute force)
+- Rate limiting on login (prevents brute force) done this
