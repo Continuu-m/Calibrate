@@ -20,6 +20,20 @@ class TaskService {
         return await response.json();
     }
 
+    static async getCapacity(token) {
+        const response = await fetch(`${API_URL}/tasks/capacity`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch capacity: ${response.statusText}`);
+        }
+
+        return await response.json();
+    }
+
     static async createTask(token, taskData) {
         const response = await fetch(`${API_URL}/tasks`, {
             method: 'POST',
@@ -108,6 +122,20 @@ class TaskService {
 
         if (!response.ok) {
             throw new Error(`Failed to complete subtask: ${response.statusText}`);
+        }
+
+        return await response.json();
+    }
+
+    static async getSuggestedRedistribution(token) {
+        const response = await fetch(`${API_URL}/tasks/suggest-redistribution`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch redistribution suggestions: ${response.statusText}`);
         }
 
         return await response.json();

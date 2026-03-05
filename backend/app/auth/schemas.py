@@ -44,6 +44,12 @@ class PreferencesUpdate(BaseModel):
     """
     preferences: dict
 
+class ProfileUpdate(BaseModel):
+    """
+    What we expect when a user updates their basic profile.
+    """
+    full_name: str | None = None
+
 
 # ─── Response Schemas (what we send back) ─────────────────────────────────────
 
@@ -66,6 +72,7 @@ class UserResponse(BaseModel):
     email: str
     full_name: str | None
     preferences: dict | None = None
+    google_calendar_connected: bool = False
 
     class Config:
         from_attributes = True  # Allows converting SQLAlchemy model → this schema

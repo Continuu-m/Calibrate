@@ -104,8 +104,32 @@ export const AuthProvider = ({ children }) => {
         return updatedUser;
     };
 
+    const updateProfile = async (profileData) => {
+        const response = await fetch(`${API_URL}/auth/profile`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(profileData)
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to update profile');
+        }
+
+        const updatedUser = await response.json();
+        setUser(updatedUser);
+        return updatedUser;
+    };
+
+    const refreshUser = async () => {
+        if (token) await fetchUser();
+    };
+
     return (
-        <AuthContext.Provider value={{ user, token, loading, login, register, logout, updatePreferences }}>
+        <AuthContext.Provider value={{ user, token, loading, login, register, logout, updatePreferences, updateProfile, refreshUser }}>
             {children}
         </AuthContext.Provider>
     );
