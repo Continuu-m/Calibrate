@@ -9,6 +9,11 @@ export default function WeeklyCapacity() {
     const { user, token, logout } = useAuth();
     const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
     const [isDismissed, setIsDismissed] = useState(false);
+    const [suggestions, setSuggestions] = useState([]);
+    const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [isApplyingAll, setIsApplyingAll] = useState(false);
+    const [applyError, setApplyError] = useState('');
 
     const [tasks, setTasks] = useState([]);
     const [weeklyData, setWeeklyData] = useState([]);
@@ -30,6 +35,45 @@ export default function WeeklyCapacity() {
             console.error(err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSuggestRedistribution = async () => {
+        setShowSuggestions(true);
+        setIsLoadingSuggestions(true);
+        setApplyError('');
+        try {
+            const data = await TaskService.getSuggestedRedistribution(token);
+            setSuggestions(data.suggestions || []);
+        } catch (err) {
+            setApplyError('Could not load suggestions. Please try again.');
+        } finally {
+            setIsLoadingSuggestions(false);
+        }
+    };
+
+    const handleApplyAll = async () => {
+        setIsApplyingAll(true);
+        setApplyError('');
+        try {
+            for (const s of suggestions) {
+                const newDate = new Date(s.to_date + 'T12:00:00Z');
+                await TaskService.updateTask(token, s.task_id, {
+                    scheduled_date: newDate.toISOString()
+                });
+            }
+            // Await the fetch so the grid re-renders with updated tasks BEFORE
+            // the panel closes. Without await, the panel closes while tasks are
+            // still stale and the calendar appears not to update.
+            await fetchTasks();
+            setSuggestions([]);
+            setShowSuggestions(false);
+            // Don't force isDismissed — once tasks are redistributed, no days
+            // will be overloaded so the toast naturally disappears on its own.
+        } catch (err) {
+            setApplyError('Failed to apply some changes. Please refresh and try again.');
+        } finally {
+            setIsApplyingAll(false);
         }
     };
 
@@ -298,7 +342,7 @@ export default function WeeklyCapacity() {
                                 <span className="material-symbols-outlined text-yellow-400 dark:text-yellow-600 mt-0.5">lightbulb</span>
                                 <div>
                                     <p className="font-bold text-sm sm:text-base">You have overloaded days this week.</p>
-                                    <p className="text-stone-400 dark:text-stone-600 text-xs sm:text-sm">Drag tasks to lighter days to balance your load.</p>
+                                    <p className="text-stone-400 dark:text-stone-600 text-xs sm:text-sm">Drag tasks to lighter days, or let us suggest a fix.</p>
                                 </div>
                             </div>
                             <div className="flex gap-3 w-full sm:w-auto">
@@ -308,7 +352,98 @@ export default function WeeklyCapacity() {
                                 >
                                     Dismiss
                                 </button>
+                                <button
+                                    onClick={handleSuggestRedistribution}
+                                    className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 h-8 px-4 bg-primary hover:bg-red-700 text-white text-xs font-bold uppercase tracking-wide transition-colors"
+                                >
+                                    Suggest Fix
+                                    <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                                </button>
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {showSuggestions && (
+                    <div className="border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark shadow-lg">
+                        {/* Panel header */}
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-border-light dark:border-border-dark">
+                            <div className="flex items-center gap-2">
+                                <span className="material-symbols-outlined text-primary text-lg">auto_fix_high</span>
+                                <h3 className="font-bold text-sm text-stone-900 dark:text-stone-100 uppercase tracking-wide">Suggested Redistribution</h3>
+                            </div>
+                            <button
+                                onClick={() => { setShowSuggestions(false); setSuggestions([]); }}
+                                className="text-secondary hover:text-primary transition-colors"
+                                title="Close suggestions"
+                            >
+                                <span className="material-symbols-outlined text-lg">close</span>
+                            </button>
+                        </div>
+
+                        {/* Panel body */}
+                        <div className="p-4">
+                            {applyError && (
+                                <div className="mb-3 bg-red-50 dark:bg-red-900/20 text-red-600 border border-red-200 dark:border-red-800 p-2 text-xs font-bold flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-sm">error</span>
+                                    {applyError}
+                                </div>
+                            )}
+
+                            {isLoadingSuggestions ? (
+                                <div className="flex items-center justify-center gap-3 py-8 text-secondary">
+                                    <div className="size-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                    <span className="text-xs font-bold uppercase tracking-wide">Analysing your week...</span>
+                                </div>
+                            ) : suggestions.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
+                                    <span className="material-symbols-outlined text-3xl text-emerald-500">check_circle</span>
+                                    <p className="text-sm font-bold text-stone-700 dark:text-stone-300">Your week looks well-balanced!</p>
+                                    <p className="text-xs text-secondary">No tasks need to be moved right now.</p>
+                                </div>
+                            ) : (
+                                <>
+                                    <p className="text-xs text-secondary mb-3">
+                                        {suggestions.length === 1
+                                            ? '1 task can be redistributed to better balance your week.'
+                                            : `${suggestions.length} tasks can be redistributed to better balance your week.`
+                                        }
+                                    </p>
+                                    <div className="flex flex-col gap-2 mb-4">
+                                        {suggestions.map((s, i) => (
+                                            <div key={i} className="flex items-center gap-3 bg-white dark:bg-stone-800 border border-border-light dark:border-border-dark p-3">
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-xs font-bold text-stone-900 dark:text-stone-100 truncate" title={s.task_title}>{s.task_title}</p>
+                                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                                        <span className="text-[10px] font-bold text-stone-400 uppercase">{s.from_date}</span>
+                                                        <span className="material-symbols-outlined text-[12px] text-primary">arrow_forward</span>
+                                                        <span className="text-[10px] font-bold text-emerald-600 uppercase">{s.to_date}</span>
+                                                    </div>
+                                                </div>
+                                                <span className="text-[10px] font-bold text-secondary shrink-0 bg-stone-100 dark:bg-stone-700 px-2 py-0.5">
+                                                    {Math.round(s.estimated_mins / 60 * 10) / 10}h
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={handleApplyAll}
+                                            disabled={isApplyingAll}
+                                            className="flex items-center gap-2 h-9 px-5 bg-primary hover:bg-red-700 disabled:opacity-60 text-white text-xs font-bold uppercase tracking-wide transition-colors"
+                                        >
+                                            {isApplyingAll && <div className="size-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>}
+                                            {isApplyingAll ? 'Applying...' : 'Apply All'}
+                                        </button>
+                                        <button
+                                            onClick={() => { setShowSuggestions(false); setSuggestions([]); }}
+                                            className="h-9 px-5 border border-border-light dark:border-border-dark text-xs font-bold uppercase tracking-wide text-secondary hover:text-primary hover:border-primary transition-colors"
+                                        >
+                                            Dismiss
+                                        </button>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 )}

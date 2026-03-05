@@ -30,7 +30,8 @@ from app.models.task import TaskStatus
 from app.auth.dependencies import get_current_user
 from app.tasks import service
 from app.tasks.schemas import (
-    TaskCreate, TaskUpdate, TaskResponse, TaskListResponse, SubtaskResponse, CapacityResponse
+    TaskCreate, TaskUpdate, TaskResponse, TaskListResponse, SubtaskResponse, CapacityResponse,
+    RedistributionResponse
 )
 from app.limiter import limiter
 from app.services.digest_service import generate_user_digest
@@ -100,6 +101,29 @@ def get_capacity(
     Get daily capacity, overcommitment severity, and energy budget.
     """
     return service.get_daily_capacity(db, current_user)
+
+
+@router.get("/suggest-redistribution", response_model=RedistributionResponse)
+def suggest_redistribution(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Suggest a set of task moves to balance the user's weekly load.
+
+    Returns a read-only list of suggestions — does not write to the DB.
+    The client must call PATCH /tasks/{id} for each suggestion to apply them.
+
+    Example response:
+    {
+      "suggestions": [
+        {"task_id": 7, "task_title": "Write report", "from_date": "2026-03-05",
+         "to_date": "2026-03-07", "estimated_mins": 120.0}
+      ],
+      "message": "1 task can be redistributed to better balance your week."
+    }
+    """
+    return service.suggest_redistribution(db, current_user)
 
 
 @router.get("/{task_id}", response_model=TaskResponse)

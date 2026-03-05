@@ -22,11 +22,11 @@ OWNERSHIP NOTE (from PRD):
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from fastapi import HTTPException, status
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from app.models.task import Task, Subtask, TaskStatus
 from app.models.user import User
-from app.tasks.schemas import TaskCreate, TaskUpdate, CapacityResponse
+from app.tasks.schemas import TaskCreate, TaskUpdate, CapacityResponse, RedistributionSuggestion, RedistributionResponse
 
 
 def create_task(db: Session, user_id: int, payload: TaskCreate) -> Task:
@@ -241,3 +241,133 @@ def get_daily_capacity(db: Session, user: User) -> CapacityResponse:
         alert_message=alert_message,
         energy_budget=energy_budget
     )
+
+
+def suggest_redistribution(db: Session, user: User) -> RedistributionResponse:
+    """
+    Greedy weekly load-balancing algorithm.
+
+    ALGORITHM:
+    1. Load all non-completed tasks that have a scheduled_date in the next 7 days.
+    2. Group tasks by calendar date and compute each day's capacity usage.
+    3. Classify days as 'overloaded' (> caution_threshold%) or 'light' (< 50%).
+    4. For each overloaded day, sort tasks by estimated_time DESC and try to
+       move the largest tasks to the lightest available non-weekend day that
+       has enough headroom without itself becoming overloaded.
+    5. Return suggestions (read-only — this never writes to the DB).
+
+    Tasks without a scheduled_date (floating tasks) are skipped because they
+    don't belong to a specific day.
+    """
+    prefs = user.preferences or {}
+    work_hours = prefs.get("work_hours_per_day", 8)
+    caution_threshold = prefs.get("alert_caution_threshold", 80) / 100.0
+    base_mins = float(work_hours * 60)
+
+    # ── 1. Build a 7-day window (today → today+6) ─────────────────────────────
+    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    window = [today + timedelta(days=i) for i in range(7)]
+    window_start = window[0]
+    window_end = window[-1] + timedelta(days=1)
+
+    # ── 2. Fetch tasks that fall within the 7-day window ──────────────────────
+    tasks = db.query(Task).filter(
+        Task.user_id == user.id,
+        Task.status != TaskStatus.completed,
+        Task.scheduled_date.isnot(None),
+        Task.scheduled_date >= window_start,
+        Task.scheduled_date < window_end,
+    ).all()
+
+    # ── 3. Group tasks by date and compute initial loads ──────────────────────
+    # day_loads: {date_str -> {"used_mins": float, "tasks": [task]}}
+    day_loads: dict[str, dict] = {}
+    for day in window:
+        day_loads[day.strftime("%Y-%m-%d")] = {"used_mins": 0.0, "tasks": []}
+
+    for task in tasks:
+        # Normalise to UTC date
+        sched = task.scheduled_date
+        if sched.tzinfo is None:
+            sched = sched.replace(tzinfo=timezone.utc)
+        day_key = sched.strftime("%Y-%m-%d")
+        if day_key in day_loads:
+            day_loads[day_key]["tasks"].append(task)
+            day_loads[day_key]["used_mins"] += float(task.estimated_time or 0)
+
+    # ── 4. Classify days ──────────────────────────────────────────────────────
+    def is_weekend(date_str: str) -> bool:
+        return datetime.strptime(date_str, "%Y-%m-%d").weekday() >= 5  # Sat=5, Sun=6
+
+    overloaded_days = [
+        d for d, info in day_loads.items()
+        if base_mins > 0 and (info["used_mins"] / base_mins) > caution_threshold
+        and not is_weekend(d)
+    ]
+    light_days = [
+        d for d, info in day_loads.items()
+        if base_mins > 0 and (info["used_mins"] / base_mins) < 0.5
+        and not is_weekend(d)
+    ]
+
+    # ── 5. Greedy moves ───────────────────────────────────────────────────────
+    suggestions: list[RedistributionSuggestion] = []
+
+    for from_date in sorted(overloaded_days):
+        # Sort tasks on this day largest-first — move the heaviest tasks first
+        candidates = sorted(
+            day_loads[from_date]["tasks"],
+            key=lambda t: float(t.estimated_time or 0),
+            reverse=True,
+        )
+
+        for task in candidates:
+            task_mins = float(task.estimated_time or 0)
+            if task_mins == 0:
+                continue
+
+            # Find the lightest non-overloaded target day (sorted by load asc)
+            light_days_sorted = sorted(
+                light_days,
+                key=lambda d: day_loads[d]["used_mins"]
+            )
+
+            moved = False
+            for to_date in light_days_sorted:
+                if to_date == from_date:
+                    continue
+
+                target_after = day_loads[to_date]["used_mins"] + task_mins
+                # Accept if the target day stays under the caution threshold
+                if target_after / base_mins <= caution_threshold:
+                    # Apply the simulated move (in-memory only)
+                    day_loads[from_date]["used_mins"] -= task_mins
+                    day_loads[to_date]["used_mins"] += task_mins
+
+                    suggestions.append(RedistributionSuggestion(
+                        task_id=task.id,
+                        task_title=task.title,
+                        from_date=from_date,
+                        to_date=to_date,
+                        estimated_mins=task_mins,
+                    ))
+                    moved = True
+
+                    # Re-check whether target is still a light day after the move
+                    if (day_loads[to_date]["used_mins"] / base_mins) >= 0.5:
+                        light_days = [d for d in light_days if d != to_date]
+                    break
+
+            # Stop suggesting from this day if it's no longer overloaded
+            if base_mins > 0 and day_loads[from_date]["used_mins"] / base_mins <= caution_threshold:
+                break
+
+    # ── 6. Build response message ─────────────────────────────────────────────
+    if not suggestions:
+        msg = "Your week looks well-balanced — no redistribution needed!"
+    elif len(suggestions) == 1:
+        msg = "1 task can be redistributed to better balance your week."
+    else:
+        msg = f"{len(suggestions)} tasks can be redistributed to better balance your week."
+
+    return RedistributionResponse(suggestions=suggestions, message=msg)

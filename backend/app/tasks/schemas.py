@@ -117,3 +117,18 @@ class CapacityResponse(BaseModel):
     severity: str           # "none", "caution", "warning", "critical"
     alert_message: Optional[str] = None
     energy_budget: dict     # e.g., {"creative": 120, "administrative": 45}
+
+
+class RedistributionSuggestion(BaseModel):
+    """A single suggested task move from one day to another."""
+    task_id: int
+    task_title: str
+    from_date: str          # ISO date string "YYYY-MM-DD"
+    to_date: str            # ISO date string "YYYY-MM-DD"
+    estimated_mins: float
+
+
+class RedistributionResponse(BaseModel):
+    """Result of the redistribution suggestion algorithm."""
+    suggestions: list[RedistributionSuggestion]
+    message: str            # Human-readable summary, e.g. "3 tasks can be redistributed"

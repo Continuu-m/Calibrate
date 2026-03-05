@@ -126,6 +126,20 @@ class TaskService {
 
         return await response.json();
     }
+
+    static async getSuggestedRedistribution(token) {
+        const response = await fetch(`${API_URL}/tasks/suggest-redistribution`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch redistribution suggestions: ${response.statusText}`);
+        }
+
+        return await response.json();
+    }
 }
 
 export default TaskService;

@@ -13,7 +13,7 @@ This list tracks the remaining work for Person 2 and Person 3 based on the PRD a
     - [x] Mobile-friendly 7-day grid
     - [x] Drag-and-drop task rescheduling logic
     - [ ] Overcommitment heatmap visualization
-    - [ ] "Suggested Redistribution" toggle UI
+    - [x] "Suggested Redistribution" toggle UI
 - [ ] **Intelligent Task Breakdown UI**
     - [x] Basic subtask display
     - [ ] Integrate ML-powered breakdown generator (Person 1 API)
