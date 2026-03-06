@@ -26,7 +26,11 @@ from datetime import datetime, timedelta, timezone
 
 from app.models.task import Task, Subtask, TaskStatus
 from app.models.user import User
-from app.tasks.schemas import TaskCreate, TaskUpdate, CapacityResponse, RedistributionSuggestion, RedistributionResponse
+from app.tasks.schemas import (
+    TaskCreate, TaskUpdate, CapacityResponse, 
+    RedistributionSuggestion, RedistributionResponse,
+    InsightsResponse, Pattern
+)
 
 
 import httpx
@@ -370,9 +374,6 @@ def suggest_redistribution(db: Session, user: User) -> RedistributionResponse:
        move the largest tasks to the lightest available non-weekend day that
        has enough headroom without itself becoming overloaded.
     5. Return suggestions (read-only — this never writes to the DB).
-
-    Tasks without a scheduled_date (floating tasks) are skipped because they
-    don't belong to a specific day.
     """
     prefs = user.preferences or {}
     work_hours = prefs.get("work_hours_per_day", 8)
@@ -395,13 +396,11 @@ def suggest_redistribution(db: Session, user: User) -> RedistributionResponse:
     ).all()
 
     # ── 3. Group tasks by date and compute initial loads ──────────────────────
-    # day_loads: {date_str -> {"used_mins": float, "tasks": [task]}}
     day_loads: dict[str, dict] = {}
     for day in window:
         day_loads[day.strftime("%Y-%m-%d")] = {"used_mins": 0.0, "tasks": []}
 
     for task in tasks:
-        # Normalise to UTC date
         sched = task.scheduled_date
         if sched.tzinfo is None:
             sched = sched.replace(tzinfo=timezone.utc)
@@ -429,7 +428,6 @@ def suggest_redistribution(db: Session, user: User) -> RedistributionResponse:
     suggestions: list[RedistributionSuggestion] = []
 
     for from_date in sorted(overloaded_days):
-        # Sort tasks on this day largest-first — move the heaviest tasks first
         candidates = sorted(
             day_loads[from_date]["tasks"],
             key=lambda t: float(t.estimated_time or 0),
@@ -441,21 +439,17 @@ def suggest_redistribution(db: Session, user: User) -> RedistributionResponse:
             if task_mins == 0:
                 continue
 
-            # Find the lightest non-overloaded target day (sorted by load asc)
             light_days_sorted = sorted(
                 light_days,
                 key=lambda d: day_loads[d]["used_mins"]
             )
 
-            moved = False
             for to_date in light_days_sorted:
                 if to_date == from_date:
                     continue
 
                 target_after = day_loads[to_date]["used_mins"] + task_mins
-                # Accept if the target day stays under the caution threshold
                 if target_after / base_mins <= caution_threshold:
-                    # Apply the simulated move (in-memory only)
                     day_loads[from_date]["used_mins"] -= task_mins
                     day_loads[to_date]["used_mins"] += task_mins
 
@@ -466,14 +460,11 @@ def suggest_redistribution(db: Session, user: User) -> RedistributionResponse:
                         to_date=to_date,
                         estimated_mins=task_mins,
                     ))
-                    moved = True
 
-                    # Re-check whether target is still a light day after the move
                     if (day_loads[to_date]["used_mins"] / base_mins) >= 0.5:
                         light_days = [d for d in light_days if d != to_date]
                     break
 
-            # Stop suggesting from this day if it's no longer overloaded
             if base_mins > 0 and day_loads[from_date]["used_mins"] / base_mins <= caution_threshold:
                 break
 
@@ -486,3 +477,92 @@ def suggest_redistribution(db: Session, user: User) -> RedistributionResponse:
         msg = f"{len(suggestions)} tasks can be redistributed to better balance your week."
 
     return RedistributionResponse(suggestions=suggestions, message=msg)
+
+
+def get_insights(db: Session, user: User) -> InsightsResponse:
+    """
+    Calculate personal productivity insights based on completed tasks.
+    Analyzes historical data to detect systematic estimation biases.
+    """
+    completed_tasks = db.query(Task).filter(
+        Task.user_id == user.id,
+        Task.status == TaskStatus.completed
+    ).all()
+
+    total_tasks = len(completed_tasks)
+    if total_tasks == 0:
+        return InsightsResponse(
+            overall_accuracy_percent=100,
+            total_completed_tasks=0,
+            total_focus_time_mins=0,
+            patterns=[],
+            daily_accuracy_history={}
+        )
+
+    total_est = sum(t.estimated_time or 0 for t in completed_tasks)
+    total_act = sum(t.actual_time or 0 for t in completed_tasks)
+
+    overall_accuracy = 100
+    if total_act > 0:
+        # If actual time > estimated time, accuracy is lower.
+        # Accuracy = (Est / Act) if Act > Est, else it's tricky but let's keep it simple.
+        overall_accuracy = min(100, int((total_est / total_act) * 100))
+
+    # Group by category for pattern detection
+    type_stats = {}
+    for t in completed_tasks:
+        ttype = t.task_type.value if t.task_type else "unknown"
+        if ttype not in type_stats:
+            type_stats[ttype] = {"est": 0, "act": 0, "count": 0}
+        type_stats[ttype]["est"] += t.estimated_time or 0
+        type_stats[ttype]["act"] += t.actual_time or 0
+        type_stats[ttype]["count"] += 1
+
+    patterns = []
+    for ttype, stats in type_stats.items():
+        if stats["count"] < 2: continue # Need at least 2 tasks for a pattern
+        
+        bias = 0
+        if stats["act"] > 0:
+            # Bias is how much you missed by. 
+            # If act=100 and est=50, bias=50% (underestimated)
+            bias = int(((stats["act"] - stats["est"]) / stats["act"]) * 100)
+        
+        if bias > 15:
+            patterns.append(Pattern(
+                category=ttype,
+                bias_percent=bias,
+                message=f"You tend to underestimate {ttype} tasks by ~{bias}%."
+            ))
+        elif bias < -15:
+            # If act=50 and est=100, bias=-100% (overestimated)
+            patterns.append(Pattern(
+                category=ttype,
+                bias_percent=abs(bias),
+                message=f"You're actually {abs(bias)}% faster at {ttype} tasks than you think!"
+            ))
+
+    # 7-day accuracy trend logic
+    history = {}
+    now = datetime.now(timezone.utc)
+    for i in range(7):
+        date = (now - timedelta(days=i)).strftime("%Y-%m-%d")
+        # Filter tasks completed on this specific day
+        day_tasks = [t for t in completed_tasks if t.completed_at and t.completed_at.strftime("%Y-%m-%d") == date]
+        if day_tasks:
+            day_est = sum(t.estimated_time or 0 for t in day_tasks)
+            day_act = sum(t.actual_time or 0 for t in day_tasks)
+            if day_act > 0:
+                history[date] = min(100, int((day_est / day_act) * 100))
+            else:
+                history[date] = 100
+        else:
+            history[date] = 0 # No tasks completed
+
+    return InsightsResponse(
+        overall_accuracy_percent=overall_accuracy,
+        total_completed_tasks=total_tasks,
+        total_focus_time_mins=int(total_act),
+        patterns=patterns,
+        daily_accuracy_history=history
+    )
