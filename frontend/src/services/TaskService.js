@@ -158,6 +158,20 @@ class TaskService {
 
         return await response.json();
     }
+
+    static async getInsights(token) {
+        const response = await fetch(`${API_URL}/tasks/insights`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch insights: ${response.statusText}`);
+        }
+
+        return await response.json();
+    }
 }
 
 export default TaskService;

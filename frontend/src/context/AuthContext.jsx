@@ -19,22 +19,27 @@ export const AuthProvider = ({ children }) => {
         }
     }, [token]);
 
-    const fetchUser = async () => {
+    const fetchUser = async (overrideToken) => {
+        const activeToken = overrideToken || token;
+        if (!activeToken) {
+            setLoading(false);
+            return;
+        }
+
         try {
             const response = await fetch(`${API_URL}/auth/me`, {
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${activeToken}`
                 }
             });
             if (response.ok) {
                 const data = await response.json();
                 setUser(data);
-            } else {
+            } else if (response.status === 401) {
                 logout();
             }
         } catch (error) {
             console.error('Failed to fetch user:', error);
-            logout();
         } finally {
             setLoading(false);
         }
@@ -58,6 +63,7 @@ export const AuthProvider = ({ children }) => {
         const newToken = data.access_token;
         localStorage.setItem('token', newToken);
         setToken(newToken);
+        await fetchUser(newToken);
         return data;
     };
 

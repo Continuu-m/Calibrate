@@ -76,14 +76,15 @@ class Subtask(Base):
     id = Column(Integer, primary_key=True, index=True)
     task_id = Column(Integer, ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False, index=True)
 
-    description = Column(String, nullable=False)
+    title = Column(String, nullable=True) # Short name
+    description = Column(String, nullable=False) # Detail
     estimated_time = Column(Float, nullable=True)   # In minutes
     order = Column(Integer, default=0)              # Display order
     is_completed = Column(Boolean, default=False)
     is_implicit = Column(Boolean, default=False)    # True if AI added it (user didn't mention it)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    completed_at = Column(DateTime(timezone=True), nullable=True)
+    # completed_at = Column(DateTime(timezone=True), nullable=True) # Temporarily disabled to fix 500
 
     # Relationships
     task = relationship("Task", back_populates="subtasks")

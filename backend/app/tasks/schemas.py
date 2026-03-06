@@ -21,6 +21,7 @@ from app.models.task import TaskType, TaskPriority, TaskStatus
 # ─── Subtask Schemas ──────────────────────────────────────────────────────────
 
 class SubtaskCreate(BaseModel):
+    title: Optional[str] = None
     description: str
     estimated_time: Optional[float] = None  # minutes
     order: int = 0
@@ -28,13 +29,14 @@ class SubtaskCreate(BaseModel):
 
 class SubtaskResponse(BaseModel):
     id: int
+    title: Optional[str]
     description: str
     estimated_time: Optional[float]
     order: int
     is_completed: bool
     is_implicit: bool
     created_at: datetime
-    completed_at: Optional[datetime]
+    # completed_at: Optional[datetime] # Temporarily disabled
 
     class Config:
         from_attributes = True
@@ -134,3 +136,16 @@ class RedistributionResponse(BaseModel):
     """Result of the redistribution suggestion algorithm."""
     suggestions: list[RedistributionSuggestion]
     message: str            # Human-readable summary, e.g. "3 tasks can be redistributed"
+
+class Pattern(BaseModel):
+    category: str
+    bias_percent: int
+    message: str
+
+class InsightsResponse(BaseModel):
+    """Personal effectiveness and accuracy metrics."""
+    overall_accuracy_percent: int
+    total_completed_tasks: int
+    total_focus_time_mins: int
+    patterns: list[Pattern]
+    daily_accuracy_history: dict[str, int]

@@ -125,8 +125,12 @@ export default function WeeklyCapacity() {
                 originalMins: t.estimated_time || 0
             }));
 
-            const totalMins = dayTasks.reduce((sum, task) => sum + task.originalMins, 0);
-            const capacityPercent = Math.min(100, Math.round((totalMins / baseCapacityMins) * 100));
+            const taskSum = dayTasks.reduce((sum, task) => sum + task.originalMins, 0);
+            const contextPenalty = Math.max(0, dayTasks.length - 4) * 15;
+            const totalMins = taskSum + contextPenalty;
+
+            const capacityPercent = Math.round((totalMins / baseCapacityMins) * 100);
+            const cautionThreshold = user?.preferences?.alert_caution_threshold || 80;
 
             generatedDays.push({
                 day: currentDate.toLocaleDateString('en-US', daysOptions),
@@ -135,7 +139,9 @@ export default function WeeklyCapacity() {
                 isoDate: currentDate.toISOString(),
                 capacity: capacityPercent,
                 tasks: dayTasks,
-                overloaded: capacityPercent > (user?.preferences?.alert_caution_threshold || 80),
+                contextPenalty,
+                overloaded: capacityPercent > cautionThreshold,
+                isOptimal: capacityPercent < 50 && !isWeekend,
                 weekend: isWeekend
             });
         }
@@ -175,14 +181,20 @@ export default function WeeklyCapacity() {
             dstDay?.tasks.splice(destination.index, 0, movedTask);
 
             // Recalculate capacity for affected days
-            const baseCapacityMins = user?.preferences?.work_hours_per_day ? user.preferences.work_hours_per_day * 60 : 8 * 60;
             return next.map(day => {
-                const totalMins = day.tasks.reduce((sum, t) => sum + t.originalMins, 0);
-                const capacityPercent = Math.min(100, Math.round((totalMins / baseCapacityMins) * 100));
+                const taskSum = day.tasks.reduce((sum, t) => sum + t.originalMins, 0);
+                const contextPenalty = Math.max(0, day.tasks.length - 4) * 15;
+                const totalMins = taskSum + contextPenalty;
+
+                const capacityPercent = Math.round((totalMins / baseCapacityMins) * 100);
+                const cautionThreshold = user?.preferences?.alert_caution_threshold || 80;
+
                 return {
                     ...day,
                     capacity: capacityPercent,
-                    overloaded: capacityPercent > (user?.preferences?.alert_caution_threshold || 80)
+                    contextPenalty,
+                    overloaded: capacityPercent > cautionThreshold,
+                    isOptimal: capacityPercent < 50 && !day.weekend
                 };
             });
         });
@@ -276,13 +288,19 @@ export default function WeeklyCapacity() {
                 <DragDropContext onDragEnd={handleDragEnd}>
                     <div className="grid grid-cols-1 md:grid-cols-7 gap-4 md:gap-px bg-border-light dark:bg-border-dark border border-border-light dark:border-border-dark overflow-x-auto">
                         {weeklyData.map((day, idx) => (
-                            <div key={idx} className={`${day.weekend ? 'bg-stone-100 dark:bg-[#1a0f0d] opacity-80' : day.overloaded ? 'bg-red-50/30 dark:bg-red-900/10 border-t-2 sm:border-t-4 md:border-t-0 md:border-b-4 border-primary' : 'bg-surface-light dark:bg-surface-dark'} min-h-0 sm:min-h-[500px] p-3 flex flex-col gap-3 group hover:bg-stone-50 dark:hover:bg-[#33201c] transition-colors relative md:min-w-0 min-w-full`}>
+                            <div key={idx} className={`
+                                ${day.weekend ? 'bg-stone-100 dark:bg-[#1a0f0d] opacity-80' :
+                                    day.overloaded ? 'bg-red-50/30 dark:bg-red-900/10 border-t-2 sm:border-t-4 md:border-t-0 md:border-b-4 border-primary' :
+                                        day.isOptimal ? 'bg-emerald-50/20 dark:bg-emerald-900/10' :
+                                            'bg-surface-light dark:bg-surface-dark'} 
+                                min-h-0 sm:min-h-[500px] p-3 flex flex-col gap-3 group hover:bg-stone-50 dark:hover:bg-[#33201c] transition-colors relative md:min-w-0 min-w-full
+                            `}>
                                 <div className="flex justify-between items-start mb-2">
                                     <div>
                                         <span className={`block text-xs font-bold uppercase ${day.overloaded ? 'text-primary' : 'text-secondary dark:text-stone-400'}`}>{day.day}</span>
                                         <span className={`block text-xl font-serif font-bold ${day.weekend ? 'text-stone-500' : 'text-stone-900 dark:text-stone-100'}`}>{day.date}</span>
                                     </div>
-                                    <span className={`text-xs font-bold px-1.5 py-0.5 border ${day.overloaded ? 'bg-primary text-white border-primary' : day.capacity > 75 ? 'text-amber-600 bg-amber-50 dark:bg-amber-900/30 border-amber-100' : day.weekend ? 'text-stone-400 bg-white dark:bg-stone-800 border-stone-200' : 'text-emerald-600 bg-emerald-50 border-emerald-100'}`}>
+                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 border ${day.overloaded ? 'bg-primary text-white border-primary' : day.capacity > 75 ? 'text-amber-600 bg-amber-50 dark:bg-amber-900/30 border-amber-100' : day.isOptimal ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 border-emerald-100' : day.weekend ? 'text-stone-400 bg-white dark:bg-stone-800 border-stone-200' : 'text-stone-600 bg-stone-50 border-stone-100'}`}>
                                         {day.capacity}%
                                     </span>
                                 </div>
@@ -292,6 +310,12 @@ export default function WeeklyCapacity() {
                                     <div className={`absolute top-0 left-0 h-full transition-all duration-700 ${day.overloaded ? 'bg-primary' : day.capacity > 75 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${Math.min(day.capacity, 100)}%` }}></div>
                                     {day.overloaded && <div className="absolute -top-1 right-0 size-2.5 bg-primary rounded-full border-2 border-white dark:border-stone-900 z-10 animate-pulse"></div>}
                                 </div>
+                                {day.contextPenalty > 0 && !day.weekend && (
+                                    <div className="text-[9px] font-bold text-amber-600 dark:text-amber-500 uppercase flex items-center gap-1">
+                                        <span className="material-symbols-outlined text-[10px]">bolt</span>
+                                        +{day.contextPenalty}m Penalty
+                                    </div>
+                                )}
 
                                 <Droppable droppableId={day.isoDate}>
                                     {(provided, snapshot) => (

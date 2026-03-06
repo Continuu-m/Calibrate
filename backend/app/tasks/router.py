@@ -103,6 +103,17 @@ def get_capacity(
     return service.get_daily_capacity(db, current_user)
 
 
+@router.get("/insights", response_model=service.InsightsResponse)
+def get_insights(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get personal productivity insights based on completed tasks.
+    """
+    return service.get_insights(db, current_user)
+
+
 @router.get("/suggest-redistribution", response_model=RedistributionResponse)
 def suggest_redistribution(
     db: Session = Depends(get_db),
