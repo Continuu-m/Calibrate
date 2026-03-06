@@ -1,7 +1,9 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -32,6 +34,28 @@ app = FastAPI(
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+@app.exception_handler(SQLAlchemyError)
+async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Database error occurred", "message": str(exc)},
+    )
+
+from fastapi import HTTPException
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    if isinstance(exc, HTTPException):
+        # Let FastAPI's default handler deal with HTTP Exceptions
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+        
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An unexpected error occurred", "message": str(exc)},
+    )
+
 app.add_middleware(SlowAPIMiddleware)
 
 # ─── CORS Configuration ──────────────────────────────────────────────────────

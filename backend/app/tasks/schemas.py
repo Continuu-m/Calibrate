@@ -112,6 +112,8 @@ class CapacityResponse(BaseModel):
     """Daily capacity and overcommitment metrics."""
     total_capacity_mins: int
     planned_mins: int
+    context_switch_penalty_mins: int
+    meeting_recovery_mins: int
     buffer_mins: int
     capacity_percent: int
     severity: str           # "none", "caution", "warning", "critical"

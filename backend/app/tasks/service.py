@@ -90,22 +90,29 @@ def create_task(db: Session, user_id: int, payload: TaskCreate) -> Task:
         realistic_time=payload.realistic_time,
         pessimistic_time=payload.pessimistic_time,
     )
-    db.add(task)
-    db.flush()  # Gets task.id from DB without committing yet
+    try:
+        db.add(task)
+        db.flush()  # Gets task.id from DB without committing yet
 
-    # Create subtasks linked to this task
-    for subtask_data in payload.subtasks:
-        subtask = Subtask(
-            task_id=task.id,
-            description=subtask_data.description,
-            estimated_time=subtask_data.estimated_time,
-            order=subtask_data.order,
+        # Create subtasks linked to this task
+        for subtask_data in payload.subtasks:
+            subtask = Subtask(
+                task_id=task.id,
+                description=subtask_data.description,
+                estimated_time=subtask_data.estimated_time,
+                order=subtask_data.order,
+            )
+            db.add(subtask)
+
+        db.commit()
+        db.refresh(task)
+        return task
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create task and subtasks."
         )
-        db.add(subtask)
-
-    db.commit()
-    db.refresh(task)
-    return task
 
 
 def get_tasks(
@@ -183,12 +190,19 @@ def update_task(db: Session, task_id: int, user_id: int, payload: TaskUpdate) ->
     if updates.get("status") == TaskStatus.completed and not task.completed_at:
         updates["completed_at"] = datetime.utcnow()
 
-    for field, value in updates.items():
-        setattr(task, field, value)
+    try:
+        for field, value in updates.items():
+            setattr(task, field, value)
 
-    db.commit()
-    db.refresh(task)
-    return task
+        db.commit()
+        db.refresh(task)
+        return task
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update task."
+        )
 
 
 def delete_task(db: Session, task_id: int, user_id: int) -> None:
@@ -198,8 +212,15 @@ def delete_task(db: Session, task_id: int, user_id: int) -> None:
     set in the Task model relationship — no manual cleanup needed.
     """
     task = get_task_by_id(db, task_id, user_id)
-    db.delete(task)
-    db.commit()
+    try:
+        db.delete(task)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete task."
+        )
 
 
 def complete_subtask(db: Session, task_id: int, subtask_id: int, user_id: int) -> Subtask:
@@ -221,11 +242,18 @@ def complete_subtask(db: Session, task_id: int, subtask_id: int, user_id: int) -
             detail="Subtask not found"
         )
 
-    subtask.is_completed = True
-    subtask.completed_at = datetime.utcnow()
-    db.commit()
-    db.refresh(subtask)
-    return subtask
+    try:
+        subtask.is_completed = True
+        subtask.completed_at = datetime.utcnow()
+        db.commit()
+        db.refresh(subtask)
+        return subtask
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to complete subtask."
+        )
 
 
 def get_daily_capacity(db: Session, user: User) -> CapacityResponse:
@@ -246,11 +274,54 @@ def get_daily_capacity(db: Session, user: User) -> CapacityResponse:
     ).all()
     
     planned_mins = int(sum(t.estimated_time or 0 for t in tasks))
-    buffer_mins = max(0, total_capacity_mins - planned_mins)
+    
+    # ─── 💡 Context Switching Penalties ──────────────────────────────────────────
+    # 15 minutes of "lost time" for every task scheduled after their 4th task of the day.
+    context_switch_penalty_mins = max(0, len(tasks) - 4) * 15
+    
+    # ─── 📆 Meeting Recovery Buffer ──────────────────────────────────────────────
+    # 30 minutes for every external meeting (via Calendar sync).
+    meeting_recovery_mins = 0
+    meetings_count = 0
+    
+    if user.google_calendar_connected and user.google_access_token:
+        try:
+            from app.integrations.google_calendar import get_calendar_service
+            import datetime as dt
+            
+            # Build the calendar client
+            service = get_calendar_service(user.google_access_token, user.google_refresh_token)
+            
+            # Time bounds for "today" in UTC
+            now = dt.datetime.utcnow()
+            today_start = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat() + 'Z'
+            today_end = now.replace(hour=23, minute=59, second=59, microsecond=0).isoformat() + 'Z'
+            
+            # Query the user's schedule for today
+            events_result = service.events().list(
+                calendarId='primary', timeMin=today_start, timeMax=today_end,
+                singleEvents=True, orderBy='startTime'
+            ).execute()
+            
+            events = events_result.get('items', [])
+            
+            # Optionally: we could also add the exact length of the meeting to "planned_mins".
+            # For now, we are at least adding the 30-minute recovery penalty per meeting.
+            meetings_count = len(events)
+            
+        except Exception as e:
+            print(f"Warning: Failed to fetch calendar events for user {user.id}: {e}")
+            
+    meeting_recovery_mins = meetings_count * 30
+    
+    # Total dynamically reduced time
+    total_used_mins = planned_mins + context_switch_penalty_mins + meeting_recovery_mins
+    
+    buffer_mins = max(0, total_capacity_mins - total_used_mins)
     
     capacity_percent = 0
     if total_capacity_mins > 0:
-        capacity_percent = int((planned_mins / total_capacity_mins) * 100)
+        capacity_percent = int((total_used_mins / total_capacity_mins) * 100)
         
     severity = "none"
     alert_message = None
@@ -260,7 +331,7 @@ def get_daily_capacity(db: Session, user: User) -> CapacityResponse:
         alert_message = "This week you're planning more work than available. This is a burnout risk pattern. Please defer tasks."
     elif capacity_percent > 100:
         severity = "warning"
-        alert_message = f"You have {format(planned_mins/60, '.1f')} hours of tasks planned but only {work_hours} hours available. Recommend deferring tasks."
+        alert_message = f"You have {format(total_used_mins/60, '.1f')} hours of commitments (tasks + meetings + penalties) but only {work_hours} hours available. Recommend deferring tasks."
     elif capacity_percent >= caution_threshold:
         severity = "caution"
         alert_message = f"You're at {capacity_percent}% capacity. Consider moving one task to tomorrow."
@@ -273,6 +344,8 @@ def get_daily_capacity(db: Session, user: User) -> CapacityResponse:
     return CapacityResponse(
         total_capacity_mins=total_capacity_mins,
         planned_mins=planned_mins,
+        context_switch_penalty_mins=context_switch_penalty_mins,
+        meeting_recovery_mins=meeting_recovery_mins,
         buffer_mins=buffer_mins,
         capacity_percent=capacity_percent,
         severity=severity,
