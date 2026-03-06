@@ -14,6 +14,8 @@ export default function AddTaskModal({ isOpen, onClose }) {
 
     // UI State
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [aiResult, setAiResult] = useState(null);
     const [error, setError] = useState('');
 
     const priorities = ['Low', 'Medium', 'High', 'Urgent'];
@@ -37,7 +39,35 @@ export default function AddTaskModal({ isOpen, onClose }) {
         setDescription('');
         setError('');
         setIsSubmitting(false);
+        setIsAnalyzing(false);
+        setAiResult(null);
         onClose();
+    };
+
+    const handleAnalyze = async () => {
+        if (!title.trim()) {
+            setError('Please describe the task (title) first.');
+            return;
+        }
+
+        setError('');
+        setIsAnalyzing(true);
+
+        try {
+            const data = await TaskService.analyzeTask(token, title + " " + description);
+            setAiResult(data);
+
+            // Automatically set the suggested estimate!
+            if (data.estimates && data.estimates.realistic_mins) {
+                setEstimate(data.estimates.realistic_mins);
+                setEstimateUnit('min'); // we deal in minutes for the AI output
+            }
+
+        } catch (err) {
+            setError(err.message || "Failed to analyze task with AI.");
+        } finally {
+            setIsAnalyzing(false);
+        }
     };
 
     const handleSubmit = async (scheduleForLater = false) => {
@@ -59,8 +89,12 @@ export default function AddTaskModal({ isOpen, onClose }) {
                 description: description.trim() || undefined,
                 priority: priorityMap[priority],
                 estimated_time: estimatedMins,
-                task_type: 'unknown', // Default for now
-                subtasks: [] // The AI breakdown feature would populate this
+                task_type: aiResult?.subtasks?.[0]?.type || 'unknown', // Set task type based on AI if available
+                subtasks: aiResult?.subtasks ? aiResult.subtasks.map(st => ({
+                    title: st.title || st.description.slice(0, 30),
+                    description: st.description,
+                    estimated_time: st.estimated_time_mins || 15
+                })) : []
             };
 
             // If "Add to Today", explicitly set scheduled_date and deadline to current date
@@ -169,22 +203,60 @@ export default function AddTaskModal({ isOpen, onClose }) {
                         ></textarea>
                     </div>
 
-                    {/* AI Preview - Visual only for now as requested by user context */}
-                    <div className="bg-stone-50/50 dark:bg-stone-900/50 border border-border-light dark:border-border-dark p-6 space-y-4 opacity-50 grayscale pointer-events-none">
+                    {/* AI Preview */}
+                    <div className="bg-stone-50/50 dark:bg-stone-900/50 border border-border-light dark:border-border-dark p-6 space-y-4">
                         <div className="flex justify-between items-center">
                             <div className="flex items-center gap-2 text-red-600">
                                 <span className="material-symbols-outlined text-lg">temp_preferences_custom</span>
-                                <span className="text-xs font-bold uppercase tracking-widest">AI Breakdown (Coming Soon)</span>
+                                <span className="text-xs font-bold uppercase tracking-widest text-primary">AI Breakdown</span>
                             </div>
+
+                            <button
+                                type="button"
+                                onClick={handleAnalyze}
+                                disabled={isAnalyzing || isSubmitting || !title.trim()}
+                                className="text-xs font-bold bg-white dark:bg-stone-800 border border-border-light dark:border-border-dark px-3 py-1 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors disabled:opacity-50"
+                            >
+                                {isAnalyzing ? 'Analyzing...' : 'Generate Breakdown'}
+                            </button>
                         </div>
 
-                        <div className="bg-white dark:bg-surface-dark border border-red-100 dark:border-red-900/50 p-4 flex items-center gap-4">
-                            <span className="material-symbols-outlined text-red-600">bolt</span>
-                            <div>
-                                <p className="text-xs font-medium">Realistic estimate: <span className="text-red-600 font-bold">--</span></p>
-                                <p className="text-[10px] text-stone-400">Optimistic: -- | Worst case: --</p>
+                        {aiResult ? (
+                            <div className="space-y-4">
+                                <div className="bg-white dark:bg-surface-dark border border-red-100 dark:border-red-900/50 p-4 flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <span className="material-symbols-outlined text-red-600">bolt</span>
+                                        <div>
+                                            <p className="text-xs font-medium">Auto-detected estimate: <span className="text-red-600 font-bold">{aiResult.estimates.realistic_mins} min</span></p>
+                                            <p className="text-[10px] text-stone-400">Optimistic: {aiResult.estimates.optimistic_mins}min | Worst case: {aiResult.estimates.worst_case_mins}min</p>
+                                        </div>
+                                    </div>
+                                    <span className="text-[10px] bg-red-50 text-red-600 font-bold px-2 py-1 rounded">APPLIED</span>
+                                </div>
+                                <div className="space-y-2">
+                                    <h4 className="text-[10px] font-bold uppercase text-secondary tracking-widest">Suggested Steps</h4>
+                                    {aiResult.subtasks.map((st, i) => (
+                                        <div key={i} className="flex gap-3 text-sm border border-border-light dark:border-border-dark p-3 bg-white dark:bg-surface-dark">
+                                            <span className="text-stone-300 dark:text-stone-600 font-bold">{i + 1}</span>
+                                            <div>
+                                                <p className="font-bold">{st.title || "Step"}</p>
+                                                <p className="text-stone-500 text-xs">{st.description} - <span className="text-primary italic">{st.estimated_time_mins} min</span></p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                        ) : (
+                            <div className="opacity-50 grayscale pointer-events-none">
+                                <div className="bg-white dark:bg-surface-dark border border-red-100 dark:border-red-900/50 p-4 flex items-center gap-4">
+                                    <span className="material-symbols-outlined text-red-600">bolt</span>
+                                    <div>
+                                        <p className="text-xs font-medium">Click "Generate" to calculate a realistic estimate.</p>
+                                        <p className="text-[10px] text-stone-400">Optimistic: -- | Worst case: --</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 

@@ -34,6 +34,24 @@ class TaskService {
         return await response.json();
     }
 
+    static async analyzeTask(token, description) {
+        // Calling the separate AI Engine running on port 8001
+        const AI_URL = 'http://localhost:8001';
+        const response = await fetch(`${AI_URL}/api/v1/analyze`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ task_description: description })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to analyze task: ${response.statusText}`);
+        }
+
+        return await response.json();
+    }
+
     static async createTask(token, taskData) {
         const response = await fetch(`${API_URL}/tasks`, {
             method: 'POST',

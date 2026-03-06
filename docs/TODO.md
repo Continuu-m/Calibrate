@@ -23,7 +23,7 @@ This list tracks the remaining work for Person 2 and Person 3 based on the PRD a
     - [ ] Dependency visualization (links between tasks)
     - [ ] Confidence score indicators (best/realistic/worst cases)
 - [ ] **External Integrations**
-    - [ ] Google Calendar OAuth flow
+    - [half x ] Google Calendar OAuth flow
     - [ ] Outlook Calendar OAuth flow
     - [ ] Real-time sync status indicator
 - [ ] **User Onboarding**
