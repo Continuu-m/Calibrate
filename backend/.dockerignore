@@ -1,0 +1,27 @@
+# Exclude sensitive environment variables and dev artifacts
+.env
+.env.*
+!.env.example
+
+# Exclude Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Exclude virtual environments
+.venv/
+venv/
+ENV/
+
+# Exclude git system
+.git/
+.gitignore
+
+# Exclude OS-specific files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,25 @@
+# Exclude environment files
+.env
+.env.*
+!.env.example
+
+# Exclude node_modules (Docker build should install them)
+node_modules/
+
+# Exclude build output (Docker build will generate its own)
+dist/
+build/
+
+# Exclude IDE and Git
+.idea/
+.vscode/
+.git/
+.gitignore
+
+# Exclude logs
+*.log
+npm-debug.log*
+
+# Exclude OS-specific files
+.DS_Store
+Thumbs.db

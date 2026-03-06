@@ -121,6 +121,7 @@ class CapacityResponse(BaseModel):
     severity: str           # "none", "caution", "warning", "critical"
     alert_message: Optional[str] = None
     energy_budget: dict     # e.g., {"creative": 120, "administrative": 45}
+    alert_pending: bool = False
 
 
 class RedistributionSuggestion(BaseModel):

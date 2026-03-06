@@ -8,6 +8,8 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Onboarding from './pages/Onboarding'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { NotificationProvider } from './context/NotificationContext'
+import { Toaster } from 'react-hot-toast'
 
 function ProtectedRoute({ children }) {
     const { token, user, loading } = useAuth();
@@ -55,46 +57,49 @@ function OnboardingRoute({ children }) {
 function App() {
     return (
         <AuthProvider>
-            <Router>
-                <div className="min-h-screen bg-background-light dark:bg-background-dark text-stone-900 dark:text-stone-100 flex flex-col relative">
-                    <div className="paper-texture"></div>
-                    <Routes>
-                        <Route path="/login" element={<Login />} />
-                        <Route path="/register" element={<Register />} />
-                        <Route path="/onboarding" element={
-                            <OnboardingRoute>
-                                <Onboarding />
-                            </OnboardingRoute>
-                        } />
+            <NotificationProvider>
+                <Router>
+                    <div className="min-h-screen bg-background-light dark:bg-background-dark text-stone-900 dark:text-stone-100 flex flex-col relative">
+                        <div className="paper-texture"></div>
+                        <Toaster />
+                        <Routes>
+                            <Route path="/login" element={<Login />} />
+                            <Route path="/register" element={<Register />} />
+                            <Route path="/onboarding" element={
+                                <OnboardingRoute>
+                                    <Onboarding />
+                                </OnboardingRoute>
+                            } />
 
-                        <Route path="/" element={
-                            <ProtectedRoute>
-                                <DailyDashboard />
-                            </ProtectedRoute>
-                        } />
-                        <Route path="/weekly" element={
-                            <ProtectedRoute>
-                                <WeeklyCapacity />
-                            </ProtectedRoute>
-                        } />
-                        <Route path="/completed" element={
-                            <ProtectedRoute>
-                                <Completed />
-                            </ProtectedRoute>
-                        } />
-                        <Route path="/insights" element={
-                            <ProtectedRoute>
-                                <Insights />
-                            </ProtectedRoute>
-                        } />
-                        <Route path="/settings" element={
-                            <ProtectedRoute>
-                                <Settings />
-                            </ProtectedRoute>
-                        } />
-                    </Routes>
-                </div>
-            </Router>
+                            <Route path="/" element={
+                                <ProtectedRoute>
+                                    <DailyDashboard />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/weekly" element={
+                                <ProtectedRoute>
+                                    <WeeklyCapacity />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/completed" element={
+                                <ProtectedRoute>
+                                    <Completed />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/insights" element={
+                                <ProtectedRoute>
+                                    <Insights />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/settings" element={
+                                <ProtectedRoute>
+                                    <Settings />
+                                </ProtectedRoute>
+                            } />
+                        </Routes>
+                    </div>
+                </Router>
+            </NotificationProvider>
         </AuthProvider>
     )
 }

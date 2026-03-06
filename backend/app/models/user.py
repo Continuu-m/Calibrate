@@ -30,6 +30,11 @@ class User(Base):
     google_access_token = Column(Text, nullable=True)
     google_refresh_token = Column(Text, nullable=True)
 
+    # Sync and Notification state
+    cached_capacity = Column(JSON, nullable=True)
+    last_calendar_sync = Column(DateTime(timezone=True), nullable=True)
+    alert_pending = Column(Boolean, default=False)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
