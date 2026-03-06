@@ -8,3 +8,9 @@ python-jose[cryptography]
 passlib[bcrypt]
 email-validator
 slowapi
+apscheduler
+google-api-python-client
+google-auth-oauthlib
+google-auth-httplib2
+httpx
+fastapi-mail

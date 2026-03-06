@@ -349,6 +349,12 @@ def get_daily_capacity(db: Session, user: User) -> CapacityResponse:
         t_type = t.task_type.value if t.task_type else "unknown"
         energy_budget[t_type] = energy_budget.get(t_type, 0) + int(t.estimated_time or 0)
         
+    # Fetch any pending alerts and clear them
+    alert_triggered = user.alert_pending
+    if alert_triggered:
+        user.alert_pending = False
+        db.commit()
+
     return CapacityResponse(
         total_capacity_mins=total_capacity_mins,
         planned_mins=planned_mins,
@@ -358,7 +364,8 @@ def get_daily_capacity(db: Session, user: User) -> CapacityResponse:
         capacity_percent=capacity_percent,
         severity=severity,
         alert_message=alert_message,
-        energy_budget=energy_budget
+        energy_budget=energy_budget,
+        alert_pending=alert_triggered
     )
 
 
