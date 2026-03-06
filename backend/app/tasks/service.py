@@ -51,6 +51,7 @@ def create_task(db: Session, user_id: int, payload: TaskCreate) -> Task:
                     from app.tasks.schemas import SubtaskCreate
                     for st in ai_data.get("subtasks", []):
                         payload.subtasks.append(SubtaskCreate(
+                            title=st.get("title"),
                             description=st.get("description", "Action step"),
                             estimated_time=st.get("estimated_time_mins", 15),
                             order=st.get("id", len(payload.subtasks) + 1)
@@ -98,6 +99,7 @@ def create_task(db: Session, user_id: int, payload: TaskCreate) -> Task:
         for subtask_data in payload.subtasks:
             subtask = Subtask(
                 task_id=task.id,
+                title=subtask_data.title,
                 description=subtask_data.description,
                 estimated_time=subtask_data.estimated_time,
                 order=subtask_data.order,
@@ -131,7 +133,8 @@ def get_tasks(
     We return total count alongside results so the frontend can
     show "Page 1 of 10" style UI.
     """
-    query = db.query(Task).filter(Task.user_id == user_id)
+    from sqlalchemy.orm import joinedload
+    query = db.query(Task).filter(Task.user_id == user_id).options(joinedload(Task.subtasks))
 
     # Optional status filter (e.g. only show planned tasks)
     if status:
@@ -159,10 +162,11 @@ def get_task_by_id(db: Session, task_id: int, user_id: int) -> Task:
     This prevents user A from accessing user B's tasks
     by guessing task IDs (IDOR — Insecure Direct Object Reference).
     """
+    from sqlalchemy.orm import joinedload
     task = db.query(Task).filter(
         Task.id == task_id,
         Task.user_id == user_id         # Critical: ownership check
-    ).first()
+    ).options(joinedload(Task.subtasks)).first()
 
     if not task:
         raise HTTPException(
@@ -244,7 +248,7 @@ def complete_subtask(db: Session, task_id: int, subtask_id: int, user_id: int) -
 
     try:
         subtask.is_completed = True
-        subtask.completed_at = datetime.utcnow()
+        # subtask.completed_at = datetime.utcnow()
         db.commit()
         db.refresh(subtask)
         return subtask

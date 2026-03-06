@@ -65,9 +65,13 @@ export default function TaskReflectionPanel({ isOpen, onClose, task, onTaskUpdat
                 </header>
 
                 <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 sm:py-10 space-y-8">
-                    <div className="flex items-center gap-2 text-primary">
+                    <div className="flex items-center gap-2 text-emerald-500">
                         <span className="material-symbols-outlined text-lg">check_circle</span>
-                        <span className="text-[10px] font-bold uppercase tracking-widest">TASK COMPLETE</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest">
+                            {task.status === 'completed'
+                                ? `COMPLETED ON ${task.completed_at ? new Date(task.completed_at).toLocaleDateString() : 'UNKNOWN'}`
+                                : 'TASK COMPLETE'}
+                        </span>
                     </div>
 
                     {error && (
@@ -105,6 +109,49 @@ export default function TaskReflectionPanel({ isOpen, onClose, task, onTaskUpdat
                         </div>
                     </div>
 
+                    {/* Subtasks Section */}
+                    {task.subtasks && task.subtasks.length > 0 && (
+                        <div className="space-y-4">
+                            <label className="text-[10px] font-bold uppercase text-secondary tracking-widest">SUBTASKS BREAKDOWN</label>
+                            <div className="space-y-2 border border-border-light dark:border-border-dark bg-stone-50/30 dark:bg-stone-900/10 p-4">
+                                {task.subtasks.sort((a, b) => a.order - b.order).map((subtask) => (
+                                    <div
+                                        key={subtask.id}
+                                        onClick={async () => {
+                                            if (subtask.is_completed) return;
+                                            try {
+                                                await TaskService.completeSubtask(token, task.id, subtask.id);
+                                                onTaskUpdated?.();
+                                            } catch (err) {
+                                                setError(err.message || "Failed to complete subtask");
+                                            }
+                                        }}
+                                        className={`flex items-center gap-3 p-2 group cursor-pointer transition-colors ${subtask.is_completed ? 'opacity-50' : 'hover:bg-white dark:hover:bg-stone-800'}`}
+                                    >
+                                        <div className={`w-5 h-5 border flex items-center justify-center shrink-0 ${subtask.is_completed ? 'bg-emerald-500 border-emerald-500' : 'border-stone-300 bg-white dark:bg-stone-800'}`}>
+                                            {subtask.is_completed && <span className="material-symbols-outlined text-white text-[16px]">check</span>}
+                                        </div>
+                                        <div className="flex flex-col min-w-0">
+                                            <span className={`text-[13px] font-bold ${subtask.is_completed ? 'line-through text-stone-400' : 'text-stone-700 dark:text-stone-300'}`}>
+                                                {subtask.title || subtask.description}
+                                            </span>
+                                            {subtask.title && subtask.description && subtask.title !== subtask.description && (
+                                                <span className={`text-[11px] ${subtask.is_completed ? 'text-stone-300' : 'text-stone-500'}`}>
+                                                    {subtask.description}
+                                                </span>
+                                            )}
+                                        </div>
+                                        {subtask.estimated_time && (
+                                            <span className="text-[10px] text-stone-400 ml-auto group-hover:text-primary transition-colors">
+                                                {subtask.estimated_time}m
+                                            </span>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="space-y-4">
                         <label className="text-sm font-medium">What made it take longer?</label>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -138,7 +185,7 @@ export default function TaskReflectionPanel({ isOpen, onClose, task, onTaskUpdat
                         disabled={isSubmitting}
                         className="w-full bg-primary hover:bg-red-700 text-white font-bold uppercase text-xs sm:text-sm tracking-widest py-3 sm:py-4 transition-colors flex items-center justify-center gap-2 shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:hover:bg-primary"
                     >
-                        {isSubmitting ? 'SAVING...' : 'SAVE REFLECTION'} <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                        {isSubmitting ? 'SAVING...' : (task.status === 'completed' ? 'UPDATE REFLECTION' : 'SAVE REFLECTION')} <span className="material-symbols-outlined text-sm">arrow_forward</span>
                     </button>
                     <button
                         onClick={handleDelete}

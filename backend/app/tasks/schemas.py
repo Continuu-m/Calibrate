@@ -21,6 +21,7 @@ from app.models.task import TaskType, TaskPriority, TaskStatus
 # ─── Subtask Schemas ──────────────────────────────────────────────────────────
 
 class SubtaskCreate(BaseModel):
+    title: Optional[str] = None
     description: str
     estimated_time: Optional[float] = None  # minutes
     order: int = 0
@@ -28,13 +29,14 @@ class SubtaskCreate(BaseModel):
 
 class SubtaskResponse(BaseModel):
     id: int
+    title: Optional[str]
     description: str
     estimated_time: Optional[float]
     order: int
     is_completed: bool
     is_implicit: bool
     created_at: datetime
-    completed_at: Optional[datetime]
+    # completed_at: Optional[datetime] # Temporarily disabled
 
     class Config:
         from_attributes = True
