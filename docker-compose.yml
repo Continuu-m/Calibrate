@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  # 🌐 Main API Service
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - ai-engine
+    networks:
+      - calibrate-network
+
+  # 🤖 AI Analysis Microservice
+  ai-engine:
+    build: ./ai-engine
+    ports:
+      - "8001:8001"
+    env_file:
+      - ./ai-engine/.env
+    networks:
+      - calibrate-network
+
+  # 🎨 Modern Frontend
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - calibrate-network
+
+networks:
+  calibrate-network:
+    driver: bridge
+
+# Note: In production you would also add a Postgres container here
+# For now, we connect to the Neon DB via the .env URLs

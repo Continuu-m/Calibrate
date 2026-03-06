@@ -186,6 +186,7 @@ export default function WeeklyCapacity() {
                 const contextPenalty = Math.max(0, day.tasks.length - 4) * 15;
                 const totalMins = taskSum + contextPenalty;
 
+                const baseCapacityMins = user?.preferences?.work_hours_per_day ? user.preferences.work_hours_per_day * 60 : 8 * 60;
                 const capacityPercent = Math.round((totalMins / baseCapacityMins) * 100);
                 const cautionThreshold = user?.preferences?.alert_caution_threshold || 80;
 

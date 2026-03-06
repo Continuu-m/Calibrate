@@ -46,14 +46,26 @@ from fastapi import HTTPException
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
+    """
+    Catch-all exception handler to ensure we always return JSON + CORS headers.
+    """
     if isinstance(exc, HTTPException):
-        # Let FastAPI's default handler deal with HTTP Exceptions
-        from fastapi.responses import JSONResponse
-        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+        return JSONResponse(
+            status_code=exc.status_code, 
+            content={"detail": exc.detail}
+        )
         
+    # Log the full error for debugging
+    import traceback
+    traceback.print_exc()
+
     return JSONResponse(
         status_code=500,
-        content={"detail": "An unexpected error occurred", "message": str(exc)},
+        content={
+            "detail": "An unexpected error occurred", 
+            "message": str(exc),
+            "type": type(exc).__name__
+        },
     )
 
 app.add_middleware(SlowAPIMiddleware)
@@ -63,7 +75,7 @@ app.add_middleware(SlowAPIMiddleware)
 # In production, specify the actual domain instead of "*"
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5173", "http://127.0.0.1:5174"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

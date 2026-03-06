@@ -5,7 +5,8 @@ pydantic
 psycopg2-binary
 python-dotenv
 python-jose[cryptography]
-passlib[bcrypt]
+passlib
+bcrypt==4.0.1
 email-validator
 slowapi
 apscheduler
@@ -14,3 +15,5 @@ google-auth-oauthlib
 google-auth-httplib2
 httpx
 fastapi-mail
+pytz
+alembic
