@@ -45,6 +45,8 @@ export default function DailyDashboard() {
     const plannedMins = capacityData?.planned_mins || 0;
     const bufferMins = capacityData?.buffer_mins || 0;
     const capacityPercent = capacityData?.capacity_percent || 0;
+    const contextPenalty = capacityData?.context_switch_penalty_mins || 0;
+    const meetingPenalty = capacityData?.meeting_recovery_mins || 0;
 
     // Format minutes to "Xh Ymin"
     const formatTime = (mins) => {
@@ -157,8 +159,8 @@ export default function DailyDashboard() {
             <main className="flex-1 flex flex-col overflow-y-auto pt-16 lg:pt-0">
                 {capacityData?.severity && capacityData.severity !== 'none' && (
                     <div className={`px-6 py-2 text-xs flex justify-between items-center border-b ${capacityData.severity === 'critical' ? 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200 border-red-200 dark:border-red-800/50' :
-                            capacityData.severity === 'warning' ? 'bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-200 border-orange-200 dark:border-orange-800/50' :
-                                'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 border-yellow-200 dark:border-yellow-800/50'
+                        capacityData.severity === 'warning' ? 'bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-200 border-orange-200 dark:border-orange-800/50' :
+                            'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 border-yellow-200 dark:border-yellow-800/50'
                         }`}>
                         <div className="flex items-center gap-2">
                             <span className="material-symbols-outlined text-sm">warning</span>
@@ -199,10 +201,12 @@ export default function DailyDashboard() {
                             <span className="absolute top-full mt-1 text-[10px] font-bold text-white bg-primary px-1 transition-all duration-500" style={{ left: `max(0%, min(calc(100% - 30px), calc(${capacityPercent}% - 15px)))` }}>{capacityPercent}%</span>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 pt-4 relative z-10">
-                            <Stat label="Available" value={formatTime(totalCurrentCapacityMins)} />
-                            <Stat label="Planned" value={formatTime(plannedMins)} />
-                            <Stat label="Buffer" value={formatTime(bufferMins)} highlight={bufferMins < 60} />
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 sm:gap-6 pt-4 relative z-10">
+                            <Stat label="Base Time" value={formatTime(totalCurrentCapacityMins)} />
+                            <Stat label="Tasks" value={formatTime(plannedMins)} />
+                            <Stat label="- Switch Loss" value={formatTime(contextPenalty)} highlight={contextPenalty > 0} />
+                            <Stat label="- Meetings Loss" value={formatTime(meetingPenalty)} highlight={meetingPenalty > 0} />
+                            <Stat label="= Real Buffer" value={formatTime(bufferMins)} highlight={bufferMins < 60} />
                         </div>
                     </div>
 

@@ -16,7 +16,7 @@ This list tracks the remaining work for Person 2 and Person 3 based on the PRD a
     - [x] "Suggested Redistribution" toggle UI
 - [ ] **Intelligent Task Breakdown UI**
     - [x] Basic subtask display
-    - [ ] Integrate ML-powered breakdown generator (Person 1 API)
+    - [x] Integrate ML-powered breakdown generator (Person 1 API)
     - [ ] Add "Implicit Task" detection markers
 - [ ] **Detailed Task View**
     - [ ] Build sub-navigation for single task management
@@ -42,11 +42,11 @@ This list tracks the remaining work for Person 2 and Person 3 based on the PRD a
     - [ ] GDPR Data Export utility
     - [ ] "Right to be Forgotten" (Full account/data deletion) logic
 - [ ] **Advanced Capacity Engine**
-    - [ ] Code the context-switching penalty (15m after 4th task)
-    - [ ] Meeting recovery logic (30m buffer after sync events)
+    - [x] Code the context-switching penalty (15m after 4th task)
+    - [x] Meeting recovery logic (30m buffer after sync events)
     - [ ] Dynamic "Energy Budget" tracker
 - [ ] **Alert & Notification System**
-    - [ ] Overcommitment severity classifier (Caution vs Warning vs Critical)
+    - [x] Overcommitment severity classifier (Caution vs Warning vs Critical)
     - [x] Email digest generator (Daily Summary)
     - [ ] In-app notification bus
 - [ ] **Beta Program Operations**

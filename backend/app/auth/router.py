@@ -69,9 +69,16 @@ def register(request: Request, payload: RegisterRequest, db: Session = Depends(g
         hashed_password=hashed,
         full_name=payload.full_name
     )
-    db.add(user)
-    db.commit()
-    db.refresh(user)  # Reloads user from DB so we get the auto-generated id
+    try:
+        db.add(user)
+        db.commit()
+        db.refresh(user)  # Reloads user from DB so we get the auto-generated id
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Account could not be created. Email may be invalid or already taken."
+        )
 
     return user
 
@@ -132,10 +139,16 @@ def update_preferences(
     updated_prefs = {**current_prefs, **payload.preferences}
     
     current_user.preferences = updated_prefs
-    db.commit()
-    db.refresh(current_user)
-    
-    return current_user
+    try:
+        db.commit()
+        db.refresh(current_user)
+        return current_user
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update preferences."
+        )
 
 
 @router.patch("/profile", response_model=UserResponse)
@@ -150,10 +163,16 @@ def update_profile(
     if payload.full_name is not None:
         current_user.full_name = payload.full_name
         
-    db.commit()
-    db.refresh(current_user)
-    
-    return current_user
+    try:
+        db.commit()
+        db.refresh(current_user)
+        return current_user
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update profile."
+        )
 
 
 # ─── Google Calendar OAuth ─────────────────────────────────────────────────────
