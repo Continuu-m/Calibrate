@@ -29,15 +29,53 @@ from app.models.user import User
 from app.tasks.schemas import TaskCreate, TaskUpdate, CapacityResponse, RedistributionSuggestion, RedistributionResponse
 
 
+import httpx
+
 def create_task(db: Session, user_id: int, payload: TaskCreate) -> Task:
     """
     Create a task and its subtasks in a single DB transaction.
-
-    SYSTEM DESIGN — Atomic Transactions:
-    We create the task AND subtasks together. If subtask creation fails,
-    the whole operation rolls back — no orphaned tasks without subtasks.
-    db.commit() only runs once at the end, making this atomic.
+    If subtasks are empty, we call the AI Engine running on port 8001
+    to automatically generate them.
     """
+    
+    # 1. Attempt to call AI Engine if no subtasks provided
+    if not payload.subtasks:
+        try:
+            # Note: in production this URL would be in an env var (e.g. AI_ENGINE_URL)
+            ai_url = "http://localhost:8001/api/v1/analyze"
+            with httpx.Client(timeout=10.0) as client:
+                response = client.post(ai_url, json={"task_description": payload.title + " " + (payload.description or "")})
+                if response.status_code == 200:
+                    ai_data = response.json()
+                    # Auto-fill subtasks from AI response
+                    from app.tasks.schemas import SubtaskCreate
+                    for st in ai_data.get("subtasks", []):
+                        payload.subtasks.append(SubtaskCreate(
+                            description=st.get("description", "Action step"),
+                            estimated_time=st.get("estimated_time_mins", 15),
+                            order=st.get("id", len(payload.subtasks) + 1)
+                        ))
+                    
+                    # Auto-fill estimates from AI response if they were default
+                    if not payload.estimated_time and ai_data.get("estimates"):
+                        payload.estimated_time = ai_data["estimates"].get("realistic_mins")
+                        payload.optimistic_time = ai_data["estimates"].get("optimistic_mins")
+                        payload.realistic_time = ai_data["estimates"].get("realistic_mins")
+                        payload.pessimistic_time = ai_data["estimates"].get("worst_case_mins")
+                        
+                    # Auto-fill task_type if AI provided one
+                    if ai_data.get("subtasks") and len(ai_data["subtasks"]) > 0:
+                        first_type = ai_data["subtasks"][0].get("type")
+                        if first_type and payload.task_type.value == "unknown":
+                            try:
+                                from app.models.task import TaskType
+                                payload.task_type = TaskType(first_type.lower())
+                            except ValueError:
+                                pass # ignore invalid enum values
+        except Exception as e:
+            # If AI engine is down, just proceed with creating the task without subtasks
+            print(f"Warning: AI Engine unavailable: {e}")
+
     # Create the parent task
     task = Task(
         user_id=user_id,
