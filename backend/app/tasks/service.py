@@ -322,6 +322,25 @@ def get_daily_capacity(db: Session, user: User) -> CapacityResponse:
             
     meeting_recovery_mins = meetings_count * 30
     
+    # ─── 📧 Outlook Calendar Sync ──────────────────────────────────────────────
+    outlook_meetings_count = 0
+    if user.outlook_calendar_connected and user.outlook_access_token:
+        try:
+            from app.integrations.outlook_calendar import get_outlook_calendar_events
+            import datetime as dt
+            
+            # Use same today bounds
+            now = dt.datetime.utcnow()
+            today_start = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat() + 'Z'
+            today_end = now.replace(hour=23, minute=59, second=59, microsecond=0).isoformat() + 'Z'
+            
+            events = get_outlook_calendar_events(user.outlook_access_token, today_start, today_end)
+            outlook_meetings_count = len(events)
+        except Exception as e:
+            print(f"Warning: Failed to fetch Outlook events for user {user.id}: {e}")
+            
+    meeting_recovery_mins += outlook_meetings_count * 30
+    
     # Total dynamically reduced time
     total_used_mins = planned_mins + context_switch_penalty_mins + meeting_recovery_mins
     

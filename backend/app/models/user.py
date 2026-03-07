@@ -30,6 +30,11 @@ class User(Base):
     google_access_token = Column(Text, nullable=True)
     google_refresh_token = Column(Text, nullable=True)
 
+    # Outlook Calendar OAuth tokens
+    outlook_calendar_connected = Column(Boolean, default=False)
+    outlook_access_token = Column(Text, nullable=True)
+    outlook_refresh_token = Column(Text, nullable=True)
+
     # Sync and Notification state
     cached_capacity = Column(JSON, nullable=True)
     last_calendar_sync = Column(DateTime(timezone=True), nullable=True)
