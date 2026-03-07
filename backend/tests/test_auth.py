@@ -29,8 +29,8 @@ def test_login_user(client):
     # Then login
     response = client.post(
         "/auth/login",
-        data={
-            "username": "login@example.com",
+        json={
+            "email": "login@example.com",
             "password": "password123"
         }
     )
@@ -42,8 +42,8 @@ def test_login_user(client):
 def test_login_invalid_credentials(client):
     response = client.post(
         "/auth/login",
-        data={
-            "username": "nonexistent@example.com",
+        json={
+            "email": "nonexistent@example.com",
             "password": "wrongpassword"
         }
     )
