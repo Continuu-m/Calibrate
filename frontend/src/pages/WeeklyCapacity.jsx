@@ -287,7 +287,10 @@ export default function WeeklyCapacity() {
                 </div>
 
                 <DragDropContext onDragEnd={handleDragEnd}>
-                    <div className="grid grid-cols-1 md:grid-cols-7 gap-4 md:gap-px bg-border-light dark:bg-border-dark border border-border-light dark:border-border-dark overflow-x-auto">
+                    <div
+                        data-walkthrough="weekly-grid"
+                        className="grid grid-cols-1 md:grid-cols-7 gap-4 md:gap-px bg-border-light dark:bg-border-dark border border-border-light dark:border-border-dark overflow-x-auto"
+                    >
                         {weeklyData.map((day, idx) => (
                             <div key={idx} className={`
                                 ${day.weekend ? 'bg-stone-100 dark:bg-[#1a0f0d] opacity-80' :
@@ -379,6 +382,7 @@ export default function WeeklyCapacity() {
                                 </button>
                                 <button
                                     onClick={handleSuggestRedistribution}
+                                    data-walkthrough="redistribution-toggle"
                                     className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 h-8 px-4 bg-primary hover:bg-red-700 text-white text-xs font-bold uppercase tracking-wide transition-colors"
                                 >
                                     Suggest Fix

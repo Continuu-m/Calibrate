@@ -108,7 +108,9 @@ export default function DailyDashboard() {
             )}
 
             {/* Sidebar */}
-            <aside className={`
+            <aside
+                data-walkthrough="sidebar"
+                className={`
                 fixed lg:relative inset-y-0 left-0 z-50 w-64 border-r border-border-light dark:border-border-dark flex flex-col bg-surface-light dark:bg-surface-dark shrink-0 transition-transform duration-300 ease-in-out
                 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
             `}>
@@ -178,13 +180,17 @@ export default function DailyDashboard() {
                         </div>
                         <button
                             onClick={() => setIsAddTaskOpen(true)}
+                            data-walkthrough="add-task"
                             className="hidden sm:flex bg-stone-900 dark:bg-white text-white dark:text-stone-900 px-4 py-2 text-xs font-bold uppercase tracking-wider items-center gap-2 shadow-md active:scale-95 transition-transform"
                         >
                             <span className="material-symbols-outlined text-sm">add</span> Add Task
                         </button>
                     </div>
 
-                    <div className="bg-white dark:bg-surface-dark border border-border-light dark:border-border-dark p-4 sm:p-8 space-y-6 shadow-sm relative overflow-hidden">
+                    <div
+                        data-walkthrough="capacity-stats"
+                        className="bg-white dark:bg-surface-dark border border-border-light dark:border-border-dark p-4 sm:p-8 space-y-6 shadow-sm relative overflow-hidden"
+                    >
                         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 -mr-16 -mt-16 rounded-full blur-3xl pointer-events-none"></div>
                         <div className="flex justify-between items-center relative z-10">
                             <h3 className="text-lg sm:text-xl">Today's Capacity</h3>
@@ -210,7 +216,10 @@ export default function DailyDashboard() {
                         </div>
                     </div>
 
-                    <div className="space-y-4">
+                    <div
+                        data-walkthrough="task-list"
+                        className="space-y-4"
+                    >
                         <div className="flex justify-between items-center">
                             <h3 className="text-lg font-serif">Queue</h3>
                             <div className="flex gap-4 text-[10px] font-bold uppercase text-stone-400">

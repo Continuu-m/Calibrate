@@ -9,6 +9,8 @@ import Register from './pages/Register'
 import Onboarding from './pages/Onboarding'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { NotificationProvider } from './context/NotificationContext'
+import { WalkthroughProvider } from './context/WalkthroughContext'
+import InteractiveWalkthrough from './components/InteractiveWalkthrough'
 import { Toaster } from 'react-hot-toast'
 
 function ProtectedRoute({ children }) {
@@ -58,47 +60,50 @@ function App() {
     return (
         <AuthProvider>
             <NotificationProvider>
-                <Router>
-                    <div className="min-h-screen bg-background-light dark:bg-background-dark text-stone-900 dark:text-stone-100 flex flex-col relative">
-                        <div className="paper-texture"></div>
-                        <Toaster />
-                        <Routes>
-                            <Route path="/login" element={<Login />} />
-                            <Route path="/register" element={<Register />} />
-                            <Route path="/onboarding" element={
-                                <OnboardingRoute>
-                                    <Onboarding />
-                                </OnboardingRoute>
-                            } />
+                <WalkthroughProvider>
+                    <Router>
+                        <div className="min-h-screen bg-background-light dark:bg-background-dark text-stone-900 dark:text-stone-100 flex flex-col relative">
+                            <div className="paper-texture"></div>
+                            <Toaster />
+                            <InteractiveWalkthrough />
+                            <Routes>
+                                <Route path="/login" element={<Login />} />
+                                <Route path="/register" element={<Register />} />
+                                <Route path="/onboarding" element={
+                                    <OnboardingRoute>
+                                        <Onboarding />
+                                    </OnboardingRoute>
+                                } />
 
-                            <Route path="/" element={
-                                <ProtectedRoute>
-                                    <DailyDashboard />
-                                </ProtectedRoute>
-                            } />
-                            <Route path="/weekly" element={
-                                <ProtectedRoute>
-                                    <WeeklyCapacity />
-                                </ProtectedRoute>
-                            } />
-                            <Route path="/completed" element={
-                                <ProtectedRoute>
-                                    <Completed />
-                                </ProtectedRoute>
-                            } />
-                            <Route path="/insights" element={
-                                <ProtectedRoute>
-                                    <Insights />
-                                </ProtectedRoute>
-                            } />
-                            <Route path="/settings" element={
-                                <ProtectedRoute>
-                                    <Settings />
-                                </ProtectedRoute>
-                            } />
-                        </Routes>
-                    </div>
-                </Router>
+                                <Route path="/" element={
+                                    <ProtectedRoute>
+                                        <DailyDashboard />
+                                    </ProtectedRoute>
+                                } />
+                                <Route path="/weekly" element={
+                                    <ProtectedRoute>
+                                        <WeeklyCapacity />
+                                    </ProtectedRoute>
+                                } />
+                                <Route path="/completed" element={
+                                    <ProtectedRoute>
+                                        <Completed />
+                                    </ProtectedRoute>
+                                } />
+                                <Route path="/insights" element={
+                                    <ProtectedRoute>
+                                        <Insights />
+                                    </ProtectedRoute>
+                                } />
+                                <Route path="/settings" element={
+                                    <ProtectedRoute>
+                                        <Settings />
+                                    </ProtectedRoute>
+                                } />
+                            </Routes>
+                        </div>
+                    </Router>
+                </WalkthroughProvider>
             </NotificationProvider>
         </AuthProvider>
     )
