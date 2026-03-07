@@ -260,6 +260,41 @@ export default function Settings() {
                     </div>
                 </section>
 
+                <section className="space-y-6">
+                    <h2 className="text-sm font-bold uppercase tracking-widest text-red-600 border-b border-red-100 dark:border-red-900/40 pb-2">Danger Zone</h2>
+                    <div className="p-4 border border-red-100 dark:border-red-900/40 bg-red-50/30 dark:bg-red-900/10 space-y-4">
+                        <div className="space-y-1">
+                            <p className="text-sm font-bold text-red-600">Delete Account</p>
+                            <p className="text-[10px] text-stone-500">Permanently remove your account and all your task history. This action cannot be undone.</p>
+                        </div>
+                        <button
+                            onClick={async () => {
+                                if (window.confirm("ARE YOU ABSOLUTELY SURE? This will permanently delete your account and all associated data. This action cannot be undone.")) {
+                                    setIsSubmitting(true);
+                                    try {
+                                        const res = await fetch(`${API_URL}/auth/me`, {
+                                            method: 'DELETE',
+                                            headers: { Authorization: `Bearer ${token}` }
+                                        });
+                                        if (!res.ok) throw new Error("Failed to delete account");
+
+                                        // Clear local state and redirect
+                                        if (logout) logout();
+                                        window.location.href = '/login';
+                                    } catch (err) {
+                                        setMessage({ type: 'error', text: err.message });
+                                        setIsSubmitting(false);
+                                    }
+                                }
+                            }}
+                            disabled={isSubmitting}
+                            className="text-xs font-bold text-white bg-red-600 hover:bg-red-700 px-4 py-2 transition-colors disabled:opacity-50"
+                        >
+                            DELETE MY ACCOUNT
+                        </button>
+                    </div>
+                </section>
+
                 <div className="pt-6 border-t border-border-light dark:border-border-dark flex justify-end">
                     <button
                         onClick={handleSave}

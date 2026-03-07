@@ -294,10 +294,13 @@ export default function WeeklyCapacity() {
                         {weeklyData.map((day, idx) => (
                             <div key={idx} className={`
                                 ${day.weekend ? 'bg-stone-100 dark:bg-[#1a0f0d] opacity-80' :
-                                    day.overloaded ? 'bg-red-50/30 dark:bg-red-900/10 border-t-2 sm:border-t-4 md:border-t-0 md:border-b-4 border-primary' :
-                                        day.isOptimal ? 'bg-emerald-50/20 dark:bg-emerald-900/10' :
-                                            'bg-surface-light dark:bg-surface-dark'} 
-                                min-h-0 sm:min-h-[500px] p-3 flex flex-col gap-3 group hover:bg-stone-50 dark:hover:bg-[#33201c] transition-colors relative md:min-w-0 min-w-full
+                                    day.capacity > 100 ? 'bg-red-50/40 dark:bg-red-900/10' :
+                                        day.capacity > 90 ? 'bg-orange-50/40 dark:bg-orange-900/10' :
+                                            day.capacity > 75 ? 'bg-amber-50/40 dark:bg-amber-900/10' :
+                                                day.capacity > 50 ? 'bg-blue-50/20 dark:bg-blue-900/10' :
+                                                    'bg-surface-light dark:bg-surface-dark'} 
+                                ${day.overloaded && !day.weekend ? 'border-t-2 sm:border-t-4 md:border-t-0 md:border-b-4 border-primary' : ''}
+                                min-h-0 sm:min-h-[500px] p-3 flex flex-col gap-3 group hover:bg-stone-50 dark:hover:bg-[#33201c] transition-all relative md:min-w-0 min-w-full
                             `}>
                                 <div className="flex justify-between items-start mb-2">
                                     <div>

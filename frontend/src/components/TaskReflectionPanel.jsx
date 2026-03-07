@@ -132,9 +132,17 @@ export default function TaskReflectionPanel({ isOpen, onClose, task, onTaskUpdat
                                             {subtask.is_completed && <span className="material-symbols-outlined text-white text-[16px]">check</span>}
                                         </div>
                                         <div className="flex flex-col min-w-0">
-                                            <span className={`text-[13px] font-bold ${subtask.is_completed ? 'line-through text-stone-400' : 'text-stone-700 dark:text-stone-300'}`}>
-                                                {subtask.title || subtask.description}
-                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <span className={`text-[13px] font-bold ${subtask.is_completed ? 'line-through text-stone-400' : 'text-stone-700 dark:text-stone-300'}`}>
+                                                    {subtask.title || subtask.description}
+                                                </span>
+                                                {subtask.is_implicit && (
+                                                    <span className="text-[10px] text-primary flex items-center gap-1 font-bold animate-pulse" title="AI Generated">
+                                                        <span className="material-symbols-outlined text-xs">auto_awesome</span>
+                                                        AI
+                                                    </span>
+                                                )}
+                                            </div>
                                             {subtask.title && subtask.description && subtask.title !== subtask.description && (
                                                 <span className={`text-[11px] ${subtask.is_completed ? 'text-stone-300' : 'text-stone-500'}`}>
                                                     {subtask.description}
