@@ -17,3 +17,6 @@ httpx
 fastapi-mail
 pytz
 alembic
+pytest
+pytest-asyncio
+pytest-cov
