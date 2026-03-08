@@ -1,7 +1,25 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, JSON, Text
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, JSON, Text, TypeDecorator
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.database import Base
+from app.auth.encryption import encrypt_string, decrypt_string
+
+class EncryptedString(TypeDecorator):
+    """
+    SQLAlchemy TypeDecorator for automatically encrypting/decrypting strings at rest.
+    """
+    impl = Text # Store as Text in DB
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is not None:
+            return encrypt_string(value)
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            return decrypt_string(value)
+        return value
 
 
 class User(Base):
@@ -27,13 +45,13 @@ class User(Base):
 
     # Google Calendar OAuth tokens
     google_calendar_connected = Column(Boolean, default=False)
-    google_access_token = Column(Text, nullable=True)
-    google_refresh_token = Column(Text, nullable=True)
+    google_access_token = Column(EncryptedString, nullable=True) # Now encrypted at rest
+    google_refresh_token = Column(EncryptedString, nullable=True) # Now encrypted at rest
 
     # Outlook Calendar OAuth tokens
     outlook_calendar_connected = Column(Boolean, default=False)
-    outlook_access_token = Column(Text, nullable=True)
-    outlook_refresh_token = Column(Text, nullable=True)
+    outlook_access_token = Column(EncryptedString, nullable=True) # Now encrypted at rest
+    outlook_refresh_token = Column(EncryptedString, nullable=True) # Now encrypted at rest
 
     # Sync and Notification state
     cached_capacity = Column(JSON, nullable=True)

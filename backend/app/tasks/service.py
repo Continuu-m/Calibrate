@@ -25,6 +25,7 @@ from fastapi import HTTPException, status
 from datetime import datetime, timedelta, timezone
 
 from app.models.task import Task, Subtask, TaskStatus
+from app.models.prediction import Prediction
 from app.models.user import User
 from app.tasks.schemas import (
     TaskCreate, TaskUpdate, CapacityResponse, 
@@ -58,7 +59,8 @@ def create_task(db: Session, user_id: int, payload: TaskCreate) -> Task:
                             title=st.get("title"),
                             description=st.get("description", "Action step"),
                             estimated_time=st.get("estimated_time_mins", 15),
-                            order=st.get("id", len(payload.subtasks) + 1)
+                            order=st.get("id", len(payload.subtasks) + 1),
+                            is_implicit=True
                         ))
                     
                     # Auto-fill estimates from AI response if they were default
@@ -107,8 +109,19 @@ def create_task(db: Session, user_id: int, payload: TaskCreate) -> Task:
                 description=subtask_data.description,
                 estimated_time=subtask_data.estimated_time,
                 order=subtask_data.order,
+                is_implicit=subtask_data.is_implicit
             )
             db.add(subtask)
+
+        # 3. Create initial Prediction if AI was used
+        if payload.estimated_time:
+            prediction = Prediction(
+                task_id=task.id,
+                predicted_time=payload.estimated_time,
+                confidence=ai_data.get("confidence", 0.85) if 'ai_data' in locals() else 0.8,
+                prediction_basis="personalized" if 'ai_data' in locals() else "baseline"
+            )
+            db.add(prediction)
 
         db.commit()
         db.refresh(task)

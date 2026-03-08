@@ -58,6 +58,22 @@ def exchange_code_for_outlook_tokens(code: str) -> Dict[str, Any]:
         "refresh_token": result.get("refresh_token"),
     }
 
+def refresh_outlook_token(refresh_token: str) -> Dict[str, Any]:
+    """Refresh an Outlook access token using the refresh token."""
+    client = _build_msal_app()
+    result = client.acquire_token_by_refresh_token(
+        refresh_token,
+        scopes=SCOPES
+    )
+    
+    if "error" in result:
+        raise ValueError(f"Failed to refresh Outlook tokens: {result.get('error_description')}")
+        
+    return {
+        "access_token": result.get("access_token"),
+        "refresh_token": result.get("refresh_token"),
+    }
+
 def get_outlook_calendar_events(access_token: str, start_iso: str, end_iso: str) -> list:
     """
     Fetch calendar events from MS Graph API for the given time range.

@@ -201,10 +201,24 @@ export default function DailyDashboard() {
                             )}
                         </div>
 
-                        <div className="h-4 bg-stone-100 dark:bg-stone-800 w-full relative z-10">
-                            <div className="absolute top-0 left-0 h-full bg-primary transition-all duration-500" style={{ width: `${capacityPercent}%` }}></div>
-                            <div className="absolute top-0 right-0 h-full bg-stone-200/50 flex transition-all duration-500" style={{ width: `${100 - capacityPercent}%`, background: 'repeating-linear-gradient(45deg, #e5e5e5, #e5e5e5 10px, #f2f2f2 10px, #f2f2f2 20px)' }}></div>
-                            <span className="absolute top-full mt-1 text-[10px] font-bold text-white bg-primary px-1 transition-all duration-500" style={{ left: `max(0%, min(calc(100% - 30px), calc(${capacityPercent}% - 15px)))` }}>{capacityPercent}%</span>
+                        <div className="h-6 bg-stone-100 dark:bg-stone-800 w-full relative z-10 overflow-hidden shadow-inner">
+                            <div
+                                className={`absolute top-0 left-0 h-full transition-all duration-1000 ease-out ${capacityPercent > 100 ? 'bg-primary shadow-[0_0_20px_rgba(239,68,68,0.4)]' : capacityPercent > 80 ? 'bg-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.3)]' : 'bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.2)]'}`}
+                                style={{ width: `${Math.min(capacityPercent, 100)}%` }}
+                            >
+                                <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                            </div>
+                            {capacityPercent > 100 && (
+                                <div
+                                    className="absolute top-0 right-0 h-full bg-red-600/30 animate-pulse"
+                                    style={{ width: `${Math.max(0, capacityPercent - 100)}%`, right: `-${Math.max(0, capacityPercent - 100)}%` }}
+                                ></div>
+                            )}
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <span className={`text-[10px] font-bold tracking-widest uppercase ${capacityPercent > 50 ? 'text-white' : 'text-stone-400'}`}>
+                                    {capacityPercent}% Committed
+                                </span>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 sm:gap-6 pt-4 relative z-10">
@@ -253,7 +267,8 @@ export default function DailyDashboard() {
                                             subtasks={task.subtasks?.length || 0}
                                             category={task.task_type || 'Task'}
                                             color={getPriorityColor(task.priority)}
-                                            suggested={false} // Would require more complex logic to determine suggested deferral
+                                            suggested={false}
+                                            hasImplicit={task.subtasks?.some(st => st.is_implicit)}
                                         />
                                     </div>
                                 ))
@@ -284,7 +299,7 @@ function Stat({ label, value, highlight }) {
     )
 }
 
-function TaskItem({ title, duration, priority, subtasks, category, color, suggested }) {
+function TaskItem({ title, duration, priority, subtasks, category, color, suggested, hasImplicit }) {
     return (
         <div className={`bg-white dark:bg-surface-dark border border-border-white dark:border-border-dark border-l-4 ${color} p-3 sm:p-4 shadow-sm flex items-center justify-between gap-3`}>
             <div className="flex items-center gap-3 sm:gap-4 min-w-0">
@@ -299,6 +314,7 @@ function TaskItem({ title, duration, priority, subtasks, category, color, sugges
                     <div className="flex items-center gap-2 sm:gap-3 mt-1 text-[9px] sm:text-[10px] text-secondary flex-wrap">
                         <span className="flex items-center gap-1 whitespace-nowrap"><span className="material-symbols-outlined text-[10px] sm:text-[12px]">account_tree</span> {subtasks} <span className="hidden xs:inline">subtasks</span></span>
                         <span className="flex items-center gap-1 whitespace-nowrap"><span className="material-symbols-outlined text-[10px] sm:text-[12px]">folder</span> {category.replace('_', ' ')}</span>
+                        {hasImplicit && <span className="text-primary flex items-center gap-1 font-bold"><span className="material-symbols-outlined text-[10px]">auto_awesome</span> AI</span>}
                         {suggested && <span className="text-primary font-bold">● Suggested <span className="hidden xs:inline">deferral</span></span>}
                     </div>
                 </div>

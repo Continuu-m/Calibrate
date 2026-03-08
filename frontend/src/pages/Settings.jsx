@@ -20,16 +20,28 @@ export default function Settings() {
     const [message, setMessage] = useState({ type: '', text: '' });
     const [isDisconnecting, setIsDisconnecting] = useState(false);
 
-    // Detect redirect back from Google's OAuth flow
+    // Detect redirect back from OAuth flows
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
+
+        // Google OAuth Check
         if (params.get('google_connected') === 'true') {
             setMessage({ type: 'success', text: 'Google Calendar connected successfully!' });
-            // Clean up the URL param
             window.history.replaceState({}, '', '/settings');
             if (refreshUser) refreshUser();
         } else if (params.get('google_error')) {
             setMessage({ type: 'error', text: 'Failed to connect Google Calendar. Please try again.' });
+            window.history.replaceState({}, '', '/settings');
+        }
+
+        // Outlook OAuth Check
+        if (params.get('outlook_connected') === 'true') {
+            setMessage({ type: 'success', text: 'Outlook Calendar connected successfully!' });
+            window.history.replaceState({}, '', '/settings');
+            if (refreshUser) refreshUser();
+        } else if (params.get('outlook_error')) {
+            const error = params.get('outlook_error');
+            setMessage({ type: 'error', text: `Failed to connect Outlook: ${error.replace(/_/g, ' ')}` });
             window.history.replaceState({}, '', '/settings');
         }
     }, []);

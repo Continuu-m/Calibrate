@@ -2,6 +2,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 import logging
 import asyncio
+from datetime import datetime
 
 from sqlalchemy.orm import Session
 from app.db.database import SessionLocal
@@ -49,13 +50,45 @@ async def sync_calendars():
     try:
         from app.tasks.service import get_daily_capacity
         
-        # Fetch all users with connected calendars
-        users = db.query(User).filter(User.google_calendar_connected == True).all()
+        # Fetch all users with connected calendars (Google or Outlook)
+        from sqlalchemy import or_
+        users = db.query(User).filter(or_(User.google_calendar_connected == True, User.outlook_calendar_connected == True)).all()
 
         for user in users:
             try:
+                # ─── 🔄 Token Refresh Logic ──────────────────────────────────────────
+                # For simplicity, we just refresh before every background sync 
+                # to ensure get_daily_capacity doesn't fail on expired tokens.
+                
+                # Google Refresh
+                if user.google_calendar_connected and user.google_refresh_token:
+                    try:
+                        from app.integrations.google_calendar import _build_flow
+                        flow = _build_flow()
+                        flow.refresh_token(user.google_refresh_token)
+                        user.google_access_token = flow.credentials.token
+                        # Refresh token might also change
+                        if flow.credentials.refresh_token:
+                            user.google_refresh_token = flow.credentials.refresh_token
+                    except Exception as e:
+                        logger.error(f"Failed to refresh Google token for {user.email}: {e}")
+
+                # Outlook Refresh
+                if user.outlook_calendar_connected and user.outlook_refresh_token:
+                    try:
+                        from app.integrations.outlook_calendar import refresh_outlook_token
+                        tokens = refresh_outlook_token(user.outlook_refresh_token)
+                        user.outlook_access_token = tokens["access_token"]
+                        if tokens.get("refresh_token"):
+                            user.outlook_refresh_token = tokens["refresh_token"]
+                    except Exception as e:
+                        logger.error(f"Failed to refresh Outlook token for {user.email}: {e}")
+
+                db.commit()
+
+                # ─── 📊 Capacity Sync Logic ──────────────────────────────────────────
                 # Recalculate capacity
-                # Note: get_daily_capacity already handles the Google API call
+                # Note: get_daily_capacity already handles the API calls
                 new_capacity = get_daily_capacity(db, user)
                 
                 # Check for severity increase (for Real-time Notifications)

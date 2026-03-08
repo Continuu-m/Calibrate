@@ -8,23 +8,24 @@ This list tracks the remaining work for Person 2 and Person 3 based on the PRD a
 - [ ] **Daily Dashboard Intelligence**
     - [x] Mobile responsiveness shells
     - [x] Replace mock sum logic with actual capacity calculator API
-    - [ ] Implement live "Burnout Risk" alerts based on backend events
+    - [x] Integrate ML-powered breakdown generator (Person 1 API)
+    - [x] Implement live "Burnout Risk" alerts based on backend events
 - [ ] **Weekly Planning Interface**
     - [x] Mobile-friendly 7-day grid
     - [x] Drag-and-drop task rescheduling logic
-    - [ ] Overcommitment heatmap visualization
+    - [x] Overcommitment heatmap visualization
     - [x] "Suggested Redistribution" toggle UI
 - [ ] **Intelligent Task Breakdown UI**
     - [x] Basic subtask display
     - [x] Integrate ML-powered breakdown generator (Person 1 API)
-    - [ ] Add "Implicit Task" detection markers
+    - [x] Add "Implicit Task" detection markers
 - [ ] **Detailed Task View**
     - [ ] Build sub-navigation for single task management
     - [ ] Dependency visualization (links between tasks)
-    - [ ] Confidence score indicators (best/realistic/worst cases)
+    - [x] Confidence score indicators (best/realistic/worst cases)
 - [ ] **External Integrations**
-    - [half x ] Google Calendar OAuth flow
-    - [ ] Outlook Calendar OAuth flow
+    - [x] Google Calendar OAuth flow
+    - [x] Outlook Calendar OAuth flow
     - [ ] Real-time sync status indicator
 - [ ] **User Onboarding**
     - [ ] Interactive walkthrough for first-time users
