@@ -94,9 +94,9 @@ export default function TaskReflectionPanel({ isOpen, onClose, task, onTaskUpdat
                             <label className="text-[9px] sm:text-[10px] font-bold uppercase text-secondary tracking-widest">ESTIMATED</label>
                             <p className="text-lg sm:text-xl text-stone-300 font-sans mt-1 sm:mt-2">{formatTime(task.estimated_time)}</p>
                         </div>
-                        <div className="bg-white dark:bg-surface-dark pl-2 sm:pl-4 border-l border-border-light dark:border-border-dark relative flex flex-col">
-                            <label className="text-[9px] sm:text-[10px] font-bold uppercase text-secondary tracking-widest">ACTUAL TIME (MINS)</label>
-                            <div className="flex items-center mt-1 sm:mt-2 border-b-2 border-primary w-24">
+                        <div class="bg-white dark:bg-surface-dark pl-2 sm:pl-4 border-l border-border-light dark:border-border-dark relative flex flex-col">
+                            <label class="text-[9px] sm:text-[10px] font-bold uppercase text-secondary tracking-widest">ACTUAL TIME (MINS)</label>
+                            <div class="flex items-center mt-1 sm:mt-2 border-b-2 border-primary w-24">
                                 <input
                                     type="number"
                                     value={actualTimeInput}
@@ -105,6 +105,32 @@ export default function TaskReflectionPanel({ isOpen, onClose, task, onTaskUpdat
                                     min="1"
                                     disabled={isSubmitting}
                                 />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Confidence & Dependencies */}
+                    <div className="grid grid-cols-2 gap-4 border-t border-border-light dark:border-border-dark pt-6">
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-bold uppercase text-secondary tracking-widest">Confidence Score</label>
+                            <div className="flex items-center gap-2">
+                                <div className="flex-1 h-1.5 bg-stone-100 dark:bg-stone-800 rounded-full overflow-hidden">
+                                    <div
+                                        className={`h-full transition-all duration-1000 ${task.predictions?.[0]?.confidence > 0.8 ? 'bg-emerald-500' : task.predictions?.[0]?.confidence > 0.6 ? 'bg-amber-500' : 'bg-primary'}`}
+                                        style={{ width: `${(task.predictions?.[0]?.confidence || 0.8) * 100}%` }}
+                                    ></div>
+                                </div>
+                                <span className="text-xs font-bold text-stone-600 dark:text-stone-400">
+                                    {Math.round((task.predictions?.[0]?.confidence || 0.8) * 100)}%
+                                </span>
+                            </div>
+                            <p className="text-[9px] text-stone-400 italic">AI certainty in this estimate</p>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-bold uppercase text-secondary tracking-widest">Dependencies</label>
+                            <div className="flex items-center gap-1.5 text-stone-400">
+                                <span className="material-symbols-outlined text-xs">link</span>
+                                <span className="text-[10px] font-medium italic">No linked dependencies</span>
                             </div>
                         </div>
                     </div>
@@ -132,9 +158,17 @@ export default function TaskReflectionPanel({ isOpen, onClose, task, onTaskUpdat
                                             {subtask.is_completed && <span className="material-symbols-outlined text-white text-[16px]">check</span>}
                                         </div>
                                         <div className="flex flex-col min-w-0">
-                                            <span className={`text-[13px] font-bold ${subtask.is_completed ? 'line-through text-stone-400' : 'text-stone-700 dark:text-stone-300'}`}>
-                                                {subtask.title || subtask.description}
-                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <span className={`text-[13px] font-bold ${subtask.is_completed ? 'line-through text-stone-400' : 'text-stone-700 dark:text-stone-300'}`}>
+                                                    {subtask.title || subtask.description}
+                                                </span>
+                                                {subtask.is_implicit && (
+                                                    <span className="text-[10px] text-primary flex items-center gap-1 font-bold animate-pulse" title="AI Generated">
+                                                        <span className="material-symbols-outlined text-xs">auto_awesome</span>
+                                                        AI
+                                                    </span>
+                                                )}
+                                            </div>
                                             {subtask.title && subtask.description && subtask.title !== subtask.description && (
                                                 <span className={`text-[11px] ${subtask.is_completed ? 'text-stone-300' : 'text-stone-500'}`}>
                                                     {subtask.description}

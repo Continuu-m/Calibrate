@@ -252,3 +252,99 @@ def google_disconnect(
     db.commit()
     db.refresh(current_user)
     return current_user
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+def delete_account(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Permanently delete the user's account and all associated data.
+    """
+    try:
+        db.delete(current_user)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete account."
+        )
+    return None
+
+
+# ─── Outlook Calendar OAuth ────────────────────────────────────────────────────
+
+@router.get("/outlook/connect")
+def outlook_connect(
+    request: Request,
+    token: str = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Step 1: Redirect user to Microsoft's OAuth consent screen.
+    """
+    from app.integrations.outlook_calendar import get_outlook_auth_url
+    from app.auth.dependencies import get_current_user_from_token
+
+    # Read token from query param if no Authorization header present
+    auth_header = request.headers.get("authorization", "")
+    resolved_token = token or auth_header.removeprefix("Bearer ").strip()
+
+    if not resolved_token:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    # Validate the token
+    get_current_user_from_token(resolved_token, db)
+
+    auth_url = get_outlook_auth_url(state=resolved_token)
+    return RedirectResponse(url=auth_url)
+
+
+@router.get("/outlook/callback")
+def outlook_callback(
+    code: str,
+    state: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Step 2: Microsoft redirects here with the auth code.
+    """
+    from app.integrations.outlook_calendar import exchange_code_for_outlook_tokens
+    from app.auth.dependencies import get_current_user_from_token
+
+    frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:5173")
+
+    try:
+        user = get_current_user_from_token(token=state, db=db)
+    except Exception:
+        return RedirectResponse(url=f"{frontend_url}/settings?outlook_error=invalid_state")
+
+    try:
+        tokens = exchange_code_for_outlook_tokens(code)
+        user.outlook_access_token = tokens["access_token"]
+        user.outlook_refresh_token = tokens["refresh_token"]
+        user.outlook_calendar_connected = True
+        db.commit()
+    except Exception as e:
+        print(f"Outlook exchange error: {e}")
+        return RedirectResponse(url=f"{frontend_url}/settings?outlook_error=token_exchange_failed")
+
+    return RedirectResponse(url=f"{frontend_url}/settings?outlook_connected=true")
+
+
+@router.delete("/outlook/disconnect", response_model=UserResponse)
+def outlook_disconnect(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Revoke the user's Outlook Calendar connection.
+    """
+    current_user.outlook_access_token = None
+    current_user.outlook_refresh_token = None
+    current_user.outlook_calendar_connected = False
+    db.commit()
+    db.refresh(current_user)
+    return current_user

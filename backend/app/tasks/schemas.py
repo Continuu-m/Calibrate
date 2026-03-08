@@ -16,7 +16,22 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
 from app.models.task import TaskType, TaskPriority, TaskStatus
+from app.models.prediction import Prediction
 
+
+# ─── Prediction Schemas ───────────────────────────────────────────────────────
+
+class PredictionResponse(BaseModel):
+    id: int
+    predicted_time: float
+    confidence: Optional[float]
+    confidence_interval_low: Optional[float]
+    confidence_interval_high: Optional[float]
+    prediction_basis: Optional[str]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 # ─── Subtask Schemas ──────────────────────────────────────────────────────────
 
@@ -25,6 +40,7 @@ class SubtaskCreate(BaseModel):
     description: str
     estimated_time: Optional[float] = None  # minutes
     order: int = 0
+    is_implicit: bool = False
 
 
 class SubtaskResponse(BaseModel):
@@ -98,6 +114,7 @@ class TaskResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime]
     subtasks: list[SubtaskResponse] = []        # Always include subtasks in response
+    predictions: list[PredictionResponse] = []  # Include AI confidence history
 
     class Config:
         from_attributes = True

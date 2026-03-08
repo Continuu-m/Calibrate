@@ -286,6 +286,36 @@ export default function WeeklyCapacity() {
                     </div>
                 </div>
 
+                {/* Heatmap Section */}
+                <div className="bg-stone-50 dark:bg-stone-900/50 border border-border-light dark:border-border-dark p-4 sm:p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-[10px] font-bold uppercase tracking-widest text-secondary">Weekly Overcommitment Heatmap</h3>
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-1.5 grayscale opacity-50">
+                                <span className="material-symbols-outlined text-[12px]">calendar_month</span>
+                                <span className="text-[9px] uppercase font-bold text-stone-400">7-Day Ribbon</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex gap-2 h-10">
+                        {weeklyData.map((day, i) => (
+                            <div
+                                key={i}
+                                className={`flex-1 relative group cursor-pointer transition-all hover:scale-[1.02] ${day.weekend ? 'opacity-30' : ''}`}
+                                title={`${day.day} ${day.date}: ${day.capacity}%`}
+                            >
+                                <div className={`w-full h-full border ${day.overloaded && !day.weekend ? 'bg-primary border-red-400 shadow-[0_0_10px_rgba(239,68,68,0.2)]' : day.capacity > 75 && !day.weekend ? 'bg-amber-500 border-amber-300' : day.isOptimal ? 'bg-emerald-500 border-emerald-300' : 'bg-white dark:bg-stone-800 border-stone-200 dark:border-stone-700'}`}></div>
+                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-stone-900/10 pointer-events-none">
+                                    <span className="text-[10px] font-bold text-white drop-shadow-md">{day.capacity}%</span>
+                                </div>
+                                <div className="absolute -top-3 left-0 w-full text-center">
+                                    <span className={`text-[8px] font-bold uppercase tracking-tighter ${day.overloaded && !day.weekend ? 'text-primary' : 'text-secondary dark:text-stone-500'}`}>{day.day.charAt(0)}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
                 <DragDropContext onDragEnd={handleDragEnd}>
                     <div
                         data-walkthrough="weekly-grid"
@@ -294,10 +324,13 @@ export default function WeeklyCapacity() {
                         {weeklyData.map((day, idx) => (
                             <div key={idx} className={`
                                 ${day.weekend ? 'bg-stone-100 dark:bg-[#1a0f0d] opacity-80' :
-                                    day.overloaded ? 'bg-red-50/30 dark:bg-red-900/10 border-t-2 sm:border-t-4 md:border-t-0 md:border-b-4 border-primary' :
-                                        day.isOptimal ? 'bg-emerald-50/20 dark:bg-emerald-900/10' :
-                                            'bg-surface-light dark:bg-surface-dark'} 
-                                min-h-0 sm:min-h-[500px] p-3 flex flex-col gap-3 group hover:bg-stone-50 dark:hover:bg-[#33201c] transition-colors relative md:min-w-0 min-w-full
+                                    day.capacity > 100 ? 'bg-red-50/40 dark:bg-red-900/10' :
+                                        day.capacity > 90 ? 'bg-orange-50/40 dark:bg-orange-900/10' :
+                                            day.capacity > 75 ? 'bg-amber-50/40 dark:bg-amber-900/10' :
+                                                day.capacity > 50 ? 'bg-blue-50/20 dark:bg-blue-900/10' :
+                                                    'bg-surface-light dark:bg-surface-dark'} 
+                                ${day.overloaded && !day.weekend ? 'border-t-2 sm:border-t-4 md:border-t-0 md:border-b-4 border-primary' : ''}
+                                min-h-0 sm:min-h-[500px] p-3 flex flex-col gap-3 group hover:bg-stone-50 dark:hover:bg-[#33201c] transition-all relative md:min-w-0 min-w-full
                             `}>
                                 <div className="flex justify-between items-start mb-2">
                                     <div>

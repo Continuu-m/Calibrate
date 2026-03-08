@@ -20,16 +20,28 @@ export default function Settings() {
     const [message, setMessage] = useState({ type: '', text: '' });
     const [isDisconnecting, setIsDisconnecting] = useState(false);
 
-    // Detect redirect back from Google's OAuth flow
+    // Detect redirect back from OAuth flows
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
+
+        // Google OAuth Check
         if (params.get('google_connected') === 'true') {
             setMessage({ type: 'success', text: 'Google Calendar connected successfully!' });
-            // Clean up the URL param
             window.history.replaceState({}, '', '/settings');
             if (refreshUser) refreshUser();
         } else if (params.get('google_error')) {
             setMessage({ type: 'error', text: 'Failed to connect Google Calendar. Please try again.' });
+            window.history.replaceState({}, '', '/settings');
+        }
+
+        // Outlook OAuth Check
+        if (params.get('outlook_connected') === 'true') {
+            setMessage({ type: 'success', text: 'Outlook Calendar connected successfully!' });
+            window.history.replaceState({}, '', '/settings');
+            if (refreshUser) refreshUser();
+        } else if (params.get('outlook_error')) {
+            const error = params.get('outlook_error');
+            setMessage({ type: 'error', text: `Failed to connect Outlook: ${error.replace(/_/g, ' ')}` });
             window.history.replaceState({}, '', '/settings');
         }
     }, []);
@@ -192,7 +204,7 @@ export default function Settings() {
                     </label>
 
                     {/* Google Calendar Integration */}
-                    <div className={`border border-border-light dark:border-border-dark p-4 bg-white dark:bg-surface-dark flex justify-between items-center ${user?.google_calendar_connected ? '' : ''}`}>
+                    <div className="border border-border-light dark:border-border-dark p-4 bg-white dark:bg-surface-dark flex justify-between items-center mb-4">
                         <div className="space-y-1 select-none">
                             <p className="text-sm font-bold flex items-center gap-2">
                                 <span className="material-symbols-outlined text-base">event</span>
@@ -237,19 +249,8 @@ export default function Settings() {
                             <a
                                 href={`${API_URL}/auth/google/connect`}
                                 onClick={(e) => {
-                                    // Pass the token via a custom header isn't possible with plain redirect.
-                                    // Instead open as a fetch-initiated redirect with the token in headers.
                                     e.preventDefault();
-                                    // We fetch the connect URL to get the redirect then follow it
-                                    fetch(`${API_URL}/auth/google/connect`, {
-                                        headers: { Authorization: `Bearer ${token}` },
-                                        redirect: 'manual'
-                                    }).then(res => {
-                                        // Browser blocks access to redirect URL from manual fetch.
-                                        // Best approach: open the connect endpoint URL with token appended as query param.
-                                        // Backend reads it from the state, which we set to the token.
-                                        window.location.href = `${API_URL}/auth/google/connect?token=${token}`;
-                                    });
+                                    window.location.href = `${API_URL}/auth/google/connect?token=${token}`;
                                 }}
                                 className="text-xs font-bold bg-primary hover:bg-red-700 text-white px-4 py-2 transition-colors flex items-center gap-1.5"
                             >
@@ -257,6 +258,98 @@ export default function Settings() {
                                 Connect
                             </a>
                         )}
+                    </div>
+
+                    {/* Outlook Calendar Integration */}
+                    <div className="border border-border-light dark:border-border-dark p-4 bg-white dark:bg-surface-dark flex justify-between items-center">
+                        <div className="space-y-1 select-none">
+                            <p className="text-sm font-bold flex items-center gap-2">
+                                <span className="material-symbols-outlined text-base">alternate_email</span>
+                                Outlook Calendar Integration
+                            </p>
+                            <p className="text-[10px] text-secondary">
+                                {user?.outlook_calendar_connected
+                                    ? 'Your Outlook events are being synced to Calibrate.'
+                                    : 'Connect your Microsoft account to sync your schedule.'}
+                            </p>
+                        </div>
+                        {user?.outlook_calendar_connected ? (
+                            <div className="flex items-center gap-3">
+                                <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-sm">check_circle</span>
+                                    CONNECTED
+                                </span>
+                                <button
+                                    onClick={async () => {
+                                        setIsDisconnecting(true);
+                                        try {
+                                            const res = await fetch(`${API_URL}/auth/outlook/disconnect`, {
+                                                method: 'DELETE',
+                                                headers: { Authorization: `Bearer ${token}` }
+                                            });
+                                            if (!res.ok) throw new Error();
+                                            setMessage({ type: 'success', text: 'Outlook Calendar disconnected.' });
+                                            if (refreshUser) refreshUser();
+                                        } catch {
+                                            setMessage({ type: 'error', text: 'Failed to disconnect. Try again.' });
+                                        } finally {
+                                            setIsDisconnecting(false);
+                                        }
+                                    }}
+                                    disabled={isDisconnecting}
+                                    className="text-xs font-bold text-stone-500 hover:text-red-600 border border-stone-200 dark:border-stone-700 px-3 py-1.5 transition-colors disabled:opacity-50"
+                                >
+                                    {isDisconnecting ? 'Disconnecting...' : 'Disconnect'}
+                                </button>
+                            </div>
+                        ) : (
+                            <a
+                                href={`${API_URL}/auth/outlook/connect`}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    window.location.href = `${API_URL}/auth/outlook/connect?token=${token}`;
+                                }}
+                                className="text-xs font-bold bg-stone-900 dark:bg-white text-white dark:text-stone-900 border border-stone-900 dark:border-white hover:bg-stone-800 dark:hover:bg-stone-100 px-4 py-2 transition-colors flex items-center gap-1.5"
+                            >
+                                <span className="material-symbols-outlined text-sm">add_link</span>
+                                Connect
+                            </a>
+                        )}
+                    </div>
+                </section>
+
+                <section className="space-y-6">
+                    <h2 className="text-sm font-bold uppercase tracking-widest text-red-600 border-b border-red-100 dark:border-red-900/40 pb-2">Danger Zone</h2>
+                    <div className="p-4 border border-red-100 dark:border-red-900/40 bg-red-50/30 dark:bg-red-900/10 space-y-4">
+                        <div className="space-y-1">
+                            <p className="text-sm font-bold text-red-600">Delete Account</p>
+                            <p className="text-[10px] text-stone-500">Permanently remove your account and all your task history. This action cannot be undone.</p>
+                        </div>
+                        <button
+                            onClick={async () => {
+                                if (window.confirm("ARE YOU ABSOLUTELY SURE? This will permanently delete your account and all associated data. This action cannot be undone.")) {
+                                    setIsSubmitting(true);
+                                    try {
+                                        const res = await fetch(`${API_URL}/auth/me`, {
+                                            method: 'DELETE',
+                                            headers: { Authorization: `Bearer ${token}` }
+                                        });
+                                        if (!res.ok) throw new Error("Failed to delete account");
+
+                                        // Clear local state and redirect
+                                        if (logout) logout();
+                                        window.location.href = '/login';
+                                    } catch (err) {
+                                        setMessage({ type: 'error', text: err.message });
+                                        setIsSubmitting(false);
+                                    }
+                                }
+                            }}
+                            disabled={isSubmitting}
+                            className="text-xs font-bold text-white bg-red-600 hover:bg-red-700 px-4 py-2 transition-colors disabled:opacity-50"
+                        >
+                            DELETE MY ACCOUNT
+                        </button>
                     </div>
                 </section>
 

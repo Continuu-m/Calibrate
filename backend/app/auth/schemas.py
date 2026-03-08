@@ -73,6 +73,7 @@ class UserResponse(BaseModel):
     full_name: str | None
     preferences: dict | None = None
     google_calendar_connected: bool = False
+    outlook_calendar_connected: bool = False
 
     class Config:
         from_attributes = True  # Allows converting SQLAlchemy model → this schema

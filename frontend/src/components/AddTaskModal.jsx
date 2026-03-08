@@ -238,8 +238,14 @@ export default function AddTaskModal({ isOpen, onClose }) {
                                     {aiResult.subtasks.map((st, i) => (
                                         <div key={i} className="flex gap-3 text-sm border border-border-light dark:border-border-dark p-3 bg-white dark:bg-surface-dark">
                                             <span className="text-stone-300 dark:text-stone-600 font-bold">{i + 1}</span>
-                                            <div>
-                                                <p className="font-bold">{st.title || "Step"}</p>
+                                            <div className="flex-1">
+                                                <div className="flex justify-between items-start">
+                                                    <p className="font-bold">{st.title || "Step"}</p>
+                                                    <span className="text-[10px] text-primary flex items-center gap-1 font-bold">
+                                                        <span className="material-symbols-outlined text-[12px]">auto_awesome</span>
+                                                        AI
+                                                    </span>
+                                                </div>
                                                 <p className="text-stone-500 text-xs">{st.description} - <span className="text-primary italic">{st.estimated_time_mins} min</span></p>
                                             </div>
                                         </div>

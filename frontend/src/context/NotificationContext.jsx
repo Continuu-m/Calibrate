@@ -58,7 +58,8 @@ export const NotificationProvider = ({ children }) => {
     };
 
     useEffect(() => {
-        if (token && user?.google_calendar_connected) {
+        const isConnected = user?.google_calendar_connected || user?.outlook_calendar_connected;
+        if (token && isConnected) {
             // Start polling every 2 minutes
             checkCapacity(); // Initial check
             pollInterval.current = setInterval(checkCapacity, 120000);
@@ -73,7 +74,7 @@ export const NotificationProvider = ({ children }) => {
                 clearInterval(pollInterval.current);
             }
         };
-    }, [token, user?.google_calendar_connected]);
+    }, [token, user?.google_calendar_connected, user?.outlook_calendar_connected]);
 
     return (
         <NotificationContext.Provider value={{ checkCapacity }}>
