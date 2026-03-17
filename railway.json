@@ -1,0 +1,26 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "DOCKER"
+  },
+  "services": {
+    "backend": {
+      "source": "backend/",
+      "build": {
+        "dockerfilePath": "Dockerfile"
+      }
+    },
+    "ai-engine": {
+      "source": "ai-engine/",
+      "build": {
+        "dockerfilePath": "Dockerfile"
+      }
+    },
+    "frontend": {
+      "source": "frontend/",
+      "build": {
+        "dockerfilePath": "Dockerfile"
+      }
+    }
+  }
+}

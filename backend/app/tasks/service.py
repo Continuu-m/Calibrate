@@ -46,8 +46,8 @@ def create_task(db: Session, user_id: int, payload: TaskCreate) -> Task:
     # 1. Attempt to call AI Engine if no subtasks provided
     if not payload.subtasks:
         try:
-            # Note: in production this URL would be in an env var (e.g. AI_ENGINE_URL)
-            ai_url = "http://localhost:8001/api/v1/analyze"
+            import os
+            ai_url = os.getenv("AI_ENGINE_URL", "http://localhost:8001") + "/api/v1/analyze"
             with httpx.Client(timeout=10.0) as client:
                 response = client.post(ai_url, json={"task_description": payload.title + " " + (payload.description or "")})
                 if response.status_code == 200:

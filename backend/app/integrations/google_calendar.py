@@ -14,7 +14,7 @@ def _build_flow() -> Flow:
     """Build a Flow from env vars with error handling."""
     client_id = os.environ.get("GOOGLE_CLIENT_ID")
     client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
-    redirect_uri = os.environ.get("GOOGLE_REDIRECT_URI", "http://localhost:8000/auth/google/callback")
+    redirect_uri = os.environ.get("GOOGLE_REDIRECT_URI")
 
     if not client_id or not client_secret:
         raise ValueError("GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET not set in environment")

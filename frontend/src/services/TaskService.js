@@ -35,8 +35,8 @@ class TaskService {
     }
 
     static async analyzeTask(token, description) {
-        // Calling the separate AI Engine running on port 8001
-        const AI_URL = 'http://localhost:8001';
+        // Calling the separate AI Engine
+        const AI_URL = import.meta.env.VITE_AI_ENGINE_URL || 'http://localhost:8001';
         const response = await fetch(`${AI_URL}/api/v1/analyze`, {
             method: 'POST',
             headers: {

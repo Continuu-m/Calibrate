@@ -30,7 +30,7 @@ def get_outlook_auth_url(state: str) -> str:
     `state` carries the user's JWT so we can identify them in the callback.
     """
     client = _build_msal_app()
-    redirect_uri = os.environ.get("OUTLOOK_REDIRECT_URI", "http://localhost:8000/auth/outlook/callback")
+    redirect_uri = os.environ.get("OUTLOOK_REDIRECT_URI")
     
     auth_url = client.get_authorization_request_url(
         scopes=SCOPES,
@@ -42,7 +42,7 @@ def get_outlook_auth_url(state: str) -> str:
 def exchange_code_for_outlook_tokens(code: str) -> Dict[str, Any]:
     """Exchange an authorization code for access and refresh tokens."""
     client = _build_msal_app()
-    redirect_uri = os.environ.get("OUTLOOK_REDIRECT_URI", "http://localhost:8000/auth/outlook/callback")
+    redirect_uri = os.environ.get("OUTLOOK_REDIRECT_URI")
     
     result = client.acquire_token_by_authorization_code(
         code,

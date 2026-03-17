@@ -73,9 +73,12 @@ app.add_middleware(SlowAPIMiddleware)
 # ─── CORS Configuration ──────────────────────────────────────────────────────
 # Allows the frontend to communicate with the backend across different ports.
 # In production, specify the actual domain instead of "*"
+import os
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

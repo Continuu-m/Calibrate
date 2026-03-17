@@ -12,14 +12,12 @@ from src.services.ai_analyzer import AIAnalyzer
 app = FastAPI(title="Calibrate AI Engine", version="1.0.0")
 
 # Allow requests from frontend
+import os
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173", 
-        "http://127.0.0.1:5173",
-        "http://localhost",
-        "http://127.0.0.1"
-    ],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
