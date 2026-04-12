@@ -18,6 +18,7 @@ class AIAnalyzer:
     def analyze_task(self, description: str) -> List[Dict]:
         system_prompt = """You are an expert project manager and productivity assistant.
 Your job is to break down a user's task into manageable subtasks.
+You assign too much time to task right now, so be realistic and concise.
 Output ONLY a valid JSON object with a single key "subtasks" containing an array of subtask objects.
 Each subtask must conform to this schema:
 {

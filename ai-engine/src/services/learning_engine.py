@@ -2,7 +2,7 @@
 
 from jinja2 import Environment, FileSystemLoader
 from models import ModelTask
-from typing import List
+from typing import List, Dict
 
 
 class LearningEngine:

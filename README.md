@@ -67,3 +67,8 @@ cd frontend && npm run dev
 
 ---
 *Developed with focus and precision to help you win your day.*
+
+run this temp chaneg
+ALTER TABLE users ADD COLUMN outlook_calendar_connected BOOLEAN DEFAULT false;
+ALTER TABLE users ADD COLUMN outlook_access_token TEXT;
+ALTER TABLE users ADD COLUMN outlook_refresh_token TEXT;
