@@ -605,3 +605,52 @@ def get_insights(db: Session, user: User) -> InsightsResponse:
         patterns=patterns,
         daily_accuracy_history=history
     )
+
+
+def get_calendar_events_for_window(db: Session, user: User, start_iso: str, end_iso: str) -> list[dict]:
+    """Fetch read-only events from connected calendars to show on the weekly view."""
+    events_out = []
+    
+    if user.google_calendar_connected and user.google_access_token:
+        try:
+            from app.integrations.google_calendar import get_calendar_service
+            service = get_calendar_service(user.google_access_token, user.google_refresh_token)
+            events_result = service.events().list(
+                calendarId='primary', timeMin=start_iso, timeMax=end_iso,
+                singleEvents=True, orderBy='startTime'
+            ).execute()
+            for e in events_result.get('items', []):
+                start = e['start'].get('dateTime', e['start'].get('date'))
+                if not start.endswith("Z") and "+" not in start:
+                    start += "Z" # Normalize generic dates
+                events_out.append({
+                    "id": f"gcal_{e['id'][:8]}",
+                    "title": f"🗓️ {e.get('summary', 'Meeting')}",
+                    "scheduled_date": start,
+                    "estimated_time": 30, # We show it as a 30m block to match its capacity penalty weight
+                    "is_calendar_event": True,
+                    "task_type": "meeting",
+                    "status": "planned"
+                })
+        except Exception as e:
+            print(f"Error fetching Google events: {e}")
+            
+    if user.outlook_calendar_connected and user.outlook_access_token:
+        try:
+            from app.integrations.outlook_calendar import get_outlook_calendar_events
+            events = get_outlook_calendar_events(user.outlook_access_token, start_iso, end_iso)
+            for e in events:
+                start_val = e.get('start', {}).get('dateTime', start_iso)
+                events_out.append({
+                    "id": f"out_{e.get('id')[:8]}",
+                    "title": f"🗓️ {e.get('subject', 'Meeting')}",
+                    "scheduled_date": start_val + ('Z' if not start_val.endswith('Z') else ''),
+                    "estimated_time": 30,
+                    "is_calendar_event": True,
+                    "task_type": "meeting",
+                    "status": "planned"
+                })
+        except Exception as e:
+            print(f"Error fetching Outlook events: {e}")
+            
+    return events_out

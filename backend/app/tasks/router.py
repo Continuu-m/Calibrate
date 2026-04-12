@@ -114,6 +114,19 @@ def get_insights(
     return service.get_insights(db, current_user)
 
 
+@router.get("/calendar/events")
+def get_calendar_events(
+    start: str,
+    end: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get calendar events from Google/Outlook for display purposes.
+    """
+    return service.get_calendar_events_for_window(db, current_user, start, end)
+
+
 @router.get("/suggest-redistribution", response_model=RedistributionResponse)
 def suggest_redistribution(
     db: Session = Depends(get_db),

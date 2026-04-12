@@ -30,6 +30,7 @@ def _build_flow() -> Flow:
             }
         }
         return Flow.from_client_config(
+            
             client_config,
             scopes=SCOPES,
             redirect_uri=redirect_uri,
@@ -46,6 +47,11 @@ def get_google_auth_url(state: str) -> str:
     """
     try:
         flow = _build_flow()
+        # Disable PKCE (code verifier) because our API is stateless and we 
+        # do not persist the flow instance across requests. PKCE is optional 
+        # for confidential server-side clients anyway.
+        flow.autogenerate_code_verifier = False
+        
         authorization_url, _ = flow.authorization_url(
             access_type="offline",
             include_granted_scopes="true",

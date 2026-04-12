@@ -138,7 +138,9 @@ def update_preferences(
     current_prefs = current_user.preferences or {}
     updated_prefs = {**current_prefs, **payload.preferences}
     
+    from sqlalchemy.orm.attributes import flag_modified
     current_user.preferences = updated_prefs
+    flag_modified(current_user, "preferences")
     try:
         db.commit()
         db.refresh(current_user)
@@ -233,6 +235,9 @@ def google_callback(
         user.google_calendar_connected = True
         db.commit()
     except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"DEBUG: Exception during google_callback: {e}")
         return RedirectResponse(url=f"{frontend_url}/settings?google_error=token_exchange_failed")
 
     return RedirectResponse(url=f"{frontend_url}/settings?google_connected=true")

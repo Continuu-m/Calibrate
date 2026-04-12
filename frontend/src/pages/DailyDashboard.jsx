@@ -31,7 +31,28 @@ export default function DailyDashboard() {
                 TaskService.getTasks(token, 'planned'),
                 TaskService.getCapacity(token)
             ]);
-            setTasks(data.tasks || []);
+
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const endDay = new Date(today);
+            endDay.setDate(endDay.getDate() + 1);
+
+            let calData = [];
+            try {
+                const calRes = await fetch(`${API_URL}/tasks/calendar/events?start=${today.toISOString()}&end=${endDay.toISOString()}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (calRes.ok) calData = await calRes.json();
+            } catch (e) {
+                console.error('Failed to fetch calendar events', e);
+            }
+
+            const allTasks = [...(data.tasks || []), ...calData].sort((a,b) => {
+                return (a.is_calendar_event === b.is_calendar_event) ? 0 : a.is_calendar_event ? -1 : 1;
+            });
+
+            setTasks(allTasks);
             setCapacityData(capData);
         } catch (err) {
             setError(err.message);
@@ -259,16 +280,17 @@ export default function DailyDashboard() {
                                 </div>
                             ) : (
                                 tasks.map((task) => (
-                                    <div key={task.id} onClick={() => { setSelectedTask(task); setIsReflectionOpen(true); }} className="cursor-pointer">
+                                    <div key={task.id} onClick={() => { if(!task.is_calendar_event) { setSelectedTask(task); setIsReflectionOpen(true); } }} className={task.is_calendar_event ? "" : "cursor-pointer"}>
                                         <TaskItem
                                             title={task.title}
                                             duration={formatTime(task.estimated_time)}
                                             priority={(task.priority || 'medium').toUpperCase()}
                                             subtasks={task.subtasks?.length || 0}
                                             category={task.task_type || 'Task'}
-                                            color={getPriorityColor(task.priority)}
+                                            color={task.is_calendar_event ? 'border-l-stone-400' : getPriorityColor(task.priority)}
                                             suggested={false}
                                             hasImplicit={task.subtasks?.some(st => st.is_implicit)}
+                                            isEvent={task.is_calendar_event}
                                         />
                                     </div>
                                 ))
@@ -299,7 +321,21 @@ function Stat({ label, value, highlight }) {
     )
 }
 
-function TaskItem({ title, duration, priority, subtasks, category, color, suggested, hasImplicit }) {
+function TaskItem({ title, duration, priority, subtasks, category, color, suggested, hasImplicit, isEvent }) {
+    if (isEvent) {
+        return (
+            <div className={`bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700 border-l-4 ${color} p-3 sm:p-4 shadow-sm flex items-center justify-between gap-3 opacity-90`}>
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                    <span className="material-symbols-outlined text-stone-400 shrink-0 select-none">event</span>
+                    <div className="min-w-0">
+                        <p className={`text-xs sm:text-sm font-bold truncate text-stone-600 dark:text-stone-300`}>{title}</p>
+                        <p className="text-[10px] text-stone-400 mt-1">Imported from synced calendar</p>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className={`bg-white dark:bg-surface-dark border border-border-white dark:border-border-dark border-l-4 ${color} p-3 sm:p-4 shadow-sm flex items-center justify-between gap-3`}>
             <div className="flex items-center gap-3 sm:gap-4 min-w-0">

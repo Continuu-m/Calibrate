@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -81,6 +82,11 @@ export default function Settings() {
 
     return (
         <div className="flex-1 p-4 sm:p-12 max-w-4xl mx-auto w-full pb-24">
+            <Link to="/" className="inline-flex items-center gap-2 text-sm font-bold text-stone-500 hover:text-stone-900 dark:hover:text-white transition-colors mb-6">
+                <span className="material-symbols-outlined text-sm">arrow_back</span>
+                Back to Dashboard
+            </Link>
+            
             <h1 className="text-3xl sm:text-5xl mb-6 sm:mb-8 font-serif">Settings</h1>
 
             {message.text && (

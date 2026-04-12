@@ -30,7 +30,20 @@ export default function WeeklyCapacity() {
         try {
             setLoading(true);
             const data = await TaskService.getTasks(token);
-            setTasks(data.tasks || []);
+
+            // Determine date window for events
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const endDay = new Date(today);
+            endDay.setDate(endDay.getDate() + 7);
+
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const calRes = await fetch(`${API_URL}/tasks/calendar/events?start=${today.toISOString()}&end=${endDay.toISOString()}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const calData = calRes.ok ? await calRes.json() : [];
+
+            setTasks([...(data.tasks || []), ...calData]);
         } catch (err) {
             console.error(err);
         } finally {
@@ -115,14 +128,16 @@ export default function WeeklyCapacity() {
                 if (!taskDateStr && i === 0) return true;
                 if (!taskDateStr) return false;
 
-                const tDate = new Date(taskDateStr + (taskDateStr.endsWith('Z') ? '' : 'Z'));
+                const hasTz = taskDateStr.endsWith('Z') || taskDateStr.match(/[+-]\d{2}:\d{2}$/);
+                const tDate = new Date(hasTz ? taskDateStr : taskDateStr + 'Z');
                 return tDate >= dayStart && tDate < dayEnd;
             }).map(t => ({
                 id: t.id,
                 title: t.title,
                 time: t.estimated_time ? `${Math.floor(t.estimated_time / 60) > 0 ? Math.floor(t.estimated_time / 60) + ' ' + (Math.floor(t.estimated_time / 60) === 1 ? 'hr' : 'hrs') : ''} ${t.estimated_time % 60 > 0 ? (t.estimated_time % 60) + ' min' : ''}`.trim() : null,
                 type: t.task_type || 'work',
-                originalMins: t.estimated_time || 0
+                originalMins: t.estimated_time || 0,
+                is_calendar_event: t.is_calendar_event || false
             }));
 
             const taskSum = dayTasks.reduce((sum, task) => sum + task.originalMins, 0);
@@ -367,24 +382,36 @@ export default function WeeklyCapacity() {
                                                 </div>
                                             ) : (
                                                 day.tasks.map((task, tIdx) => (
-                                                    <Draggable key={task.id.toString()} draggableId={task.id.toString()} index={tIdx}>
-                                                        {(provided, snapshot) => (
-                                                            <div
-                                                                ref={provided.innerRef}
-                                                                {...provided.draggableProps}
-                                                                {...provided.dragHandleProps}
-                                                                className={`bg-white dark:bg-stone-800 border-l-4 ${day.overloaded ? 'border-primary' : day.capacity > 75 ? 'border-amber-500' : 'border-emerald-500'} p-2 shadow-sm hover:shadow-md transition-all select-none ${snapshot.isDragging ? 'shadow-xl rotate-1 opacity-95 ring-2 ring-primary/40 scale-105' : ''}`}
-                                                            >
-                                                                <div className="flex items-center gap-1.5">
-                                                                    <span className="material-symbols-outlined text-[14px] text-stone-300 dark:text-stone-600 shrink-0">drag_indicator</span>
-                                                                    <div className="min-w-0">
-                                                                        <p className={`text-xs font-bold text-stone-900 dark:text-stone-100 truncate`} title={task.title}>{task.title}</p>
-                                                                        {task.time && <p className="text-[10px] text-secondary dark:text-stone-400">{task.time}</p>}
-                                                                    </div>
+                                                    task.is_calendar_event ? (
+                                                        <div key={task.id.toString()} className={`bg-stone-100 dark:bg-stone-800/50 border-l-4 border-stone-400 dark:border-stone-600 p-2 opacity-80 select-none`}>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="material-symbols-outlined text-[10px] text-stone-400 shrink-0">event</span>
+                                                                <div className="min-w-0">
+                                                                    <p className={`text-[11px] font-bold text-stone-600 dark:text-stone-400 truncate`} title={task.title}>{task.title}</p>
+                                                                    <p className="text-[9px] text-stone-500">{task.time}</p>
                                                                 </div>
                                                             </div>
-                                                        )}
-                                                    </Draggable>
+                                                        </div>
+                                                    ) : (
+                                                        <Draggable key={task.id.toString()} draggableId={task.id.toString()} index={tIdx}>
+                                                            {(provided, snapshot) => (
+                                                                <div
+                                                                    ref={provided.innerRef}
+                                                                    {...provided.draggableProps}
+                                                                    {...provided.dragHandleProps}
+                                                                    className={`bg-white dark:bg-stone-800 border-l-4 ${day.overloaded ? 'border-primary' : day.capacity > 75 ? 'border-amber-500' : 'border-emerald-500'} p-2 shadow-sm hover:shadow-md transition-all select-none ${snapshot.isDragging ? 'shadow-xl rotate-1 opacity-95 ring-2 ring-primary/40 scale-105' : ''}`}
+                                                                >
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <span className="material-symbols-outlined text-[14px] text-stone-300 dark:text-stone-600 shrink-0">drag_indicator</span>
+                                                                        <div className="min-w-0">
+                                                                            <p className={`text-xs font-bold text-stone-900 dark:text-stone-100 truncate`} title={task.title}>{task.title}</p>
+                                                                            {task.time && <p className="text-[10px] text-secondary dark:text-stone-400">{task.time}</p>}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </Draggable>
+                                                    )
                                                 ))
                                             )}
                                             {provided.placeholder}
