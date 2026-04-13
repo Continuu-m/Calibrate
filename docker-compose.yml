@@ -8,6 +8,11 @@ services:
       - "8000:8000"
     env_file:
       - ./backend/.env
+    environment:
+      # For Docker Compose on localhost, use the external URL that the browser sees
+      BACKEND_URL: http://localhost:8000
+      # Frontend URL for OAuth redirects - in Docker it's on port 80
+      FRONTEND_URL: http://localhost
     depends_on:
       - ai-engine
     networks:

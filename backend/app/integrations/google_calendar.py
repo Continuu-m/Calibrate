@@ -1,5 +1,10 @@
 """
 app/integrations/google_calendar.py - Google Calendar OAuth 2.0 Helpers
+
+Supports multiple deployment environments:
+  - localhost: http://localhost:8000
+  - Docker Compose: http://localhost:8000 (accessed from host)
+  - Production: https://yourdomain.com (set via BACKEND_URL)
 """
 
 import os
@@ -10,11 +15,29 @@ from googleapiclient.discovery import build
 SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
 
 
+def _get_redirect_uri() -> str:
+    """Determine the correct redirect URI based on deployment environment.
+    
+    Priority:
+      1. GOOGLE_REDIRECT_URI env var (explicit override)
+      2. BACKEND_URL env var (computed: {BACKEND_URL}/auth/google/callback)
+      3. Fallback: http://localhost:8000/auth/google/callback
+    """
+    # Explicit redirect URI takes precedence
+    explicit_uri = os.environ.get("GOOGLE_REDIRECT_URI")
+    if explicit_uri:
+        return explicit_uri
+    
+    # Use BACKEND_URL if available (recommended for Docker)
+    backend_url = os.environ.get("BACKEND_URL", "http://localhost:8000")
+    return f"{backend_url}/auth/google/callback"
+
+
 def _build_flow() -> Flow:
     """Build a Flow from env vars with error handling."""
     client_id = os.environ.get("GOOGLE_CLIENT_ID")
     client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
-    redirect_uri = os.environ.get("GOOGLE_REDIRECT_URI")
+    redirect_uri = _get_redirect_uri()
 
     if not client_id or not client_secret:
         raise ValueError("GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET not set in environment")

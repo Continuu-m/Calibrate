@@ -4,17 +4,8 @@ import os
 import argparse
 import json
 from pathlib import Path
-import sys
-from tasks import AgentTasks
-from tasks import (  # All your functions
-    add_task, view_tasks, remove_task, save_tasks, load_tasks, mark_complete,
-    detect_subtasks, calculate_capacity, detect_overcommitment
-)
-
-#Fix imports for package structure
-sys.path.insert(0, str(Path(__file__).parent / "src"))
-
-from tasks import (  # Your existing imports
+from src.tasks import AgentTasks
+from src.tasks import (
     add_task, view_tasks, remove_task, save_tasks, load_tasks, mark_complete,
     detect_subtasks, calculate_capacity, detect_overcommitment
 )

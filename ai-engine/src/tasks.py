@@ -3,8 +3,8 @@
 # src/tasks.py
 
 from jinja2 import Environment, FileSystemLoader
-from models import ModelTask
-from services import AIAnalyzer, CapacityChecker
+from src.models.task import ModelTask
+from src.services import AIAnalyzer, CapacityChecker
 from data.persistence import load_tasks, save_tasks
 
 analyser = AIAnalyzer()

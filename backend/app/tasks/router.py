@@ -31,7 +31,7 @@ from app.auth.dependencies import get_current_user
 from app.tasks import service
 from app.tasks.schemas import (
     TaskCreate, TaskUpdate, TaskResponse, TaskListResponse, SubtaskResponse, CapacityResponse,
-    RedistributionResponse
+    RedistributionResponse, InsightsResponse
 )
 from app.limiter import limiter
 from app.services.digest_service import generate_user_digest
@@ -103,7 +103,7 @@ def get_capacity(
     return service.get_daily_capacity(db, current_user)
 
 
-@router.get("/insights", response_model=service.InsightsResponse)
+@router.get("/insights", response_model=InsightsResponse)
 def get_insights(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
